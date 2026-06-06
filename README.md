@@ -211,13 +211,13 @@ http://localhost:5173
 
 ### Home Page
 
-(Add Screenshot Here)
+![Home Page](screenshots/Home-page.png)
 
 ---
 
-### Product Listing
+### Order History
 
-(Add Screenshot Here)
+![Order History](screenshots/Order-History.png)
 
 ---
 
@@ -229,25 +229,25 @@ http://localhost:5173
 
 ### Shopping Cart
 
-(Add Screenshot Here)
+![Shopping Cart](screenshots/Shopping-Cart.png)
 
 ---
 
 ### Seller Dashboard
 
-(Add Screenshot Here)
+![Seller Dashboard](screenshots/Seller-Dashboard.png)
 
 ---
 
-### Admin Dashboard
+### Seller Audit
 
-(Add Screenshot Here)
+![Seller Audit](screenshots/Seller_audit.png)
 
 ---
 
 ### Recipe Management
 
-(Add Screenshot Here)
+![Recipe Management](screenshots/Receipe-Studio.png)
 
 ---
 
