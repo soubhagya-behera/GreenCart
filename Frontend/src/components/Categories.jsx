@@ -25,9 +25,9 @@ export default function Categories() {
   };
 
   return (
-    <section className="bg-gray-50 py-8 md:py-10 w-full max-w-full overflow-hidden">
+    <section className="bg-gray-50 py-6 md:py-8 w-full max-w-full overflow-hidden">
       <div className="mx-auto max-w-7xl w-full px-4 md:px-6">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-4 gap-2">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-2">
           <div>
             <span className="text-emerald-600 font-extrabold tracking-[0.2em] text-[9px] uppercase bg-emerald-50 px-3 py-1.5 rounded-full italic">
               Explore by Kind
@@ -43,27 +43,46 @@ export default function Categories() {
           </p>
         </div>
 
-        <div className="flex overflow-x-auto pb-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {categories.map((c) => (
             <a
               key={c.text}
               href={`/category/${encodeURIComponent(c.path)}`}
-              className="group relative flex flex-col items-center min-w-[140px] bg-gray-50 rounded-[2rem] p-6 hover:bg-emerald-600 transition-all"
+              className="
+                group
+                relative
+                flex
+                flex-col
+                items-center
+                bg-white
+                rounded-3xl
+                p-6
+                shadow-sm
+                border
+                border-gray-100
+                hover:bg-emerald-50
+                hover:border-emerald-200
+                hover:shadow-xl
+                hover:-translate-y-3
+                hover:scale-[1.03]
+                transition-all
+                duration-300
+              "
             >
-              <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-4 overflow-hidden">
+              <div className="w-36 h-36 rounded-full bg-gray-50 flex items-center justify-center mb-4 overflow-hidden">
                 <img
                   src={categoryImages[c.text]}
                   alt={c.text}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain p-2"
                 />
               </div>
 
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-white">
+                <div className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-emerald-600 transition-colors duration-300">
                   Sector
                 </div>
 
-                <div className="font-bold text-gray-800 group-hover:text-white">
+                <div className="font-bold text-gray-800 group-hover:text-emerald-600 transition-colors duration-300">
                   {c.text}
                 </div>
               </div>

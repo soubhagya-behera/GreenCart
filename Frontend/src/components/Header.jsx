@@ -57,14 +57,18 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
   : [];
 
   return (
-    <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${isScrolled ? "bg-white/98 backdrop-blur-md shadow-lg py-1.5" : "bg-white py-3 md:py-4"}`}>
+    <header className={`sticky top-0 z-[100] w-full transition-all duration-300 ${
+  isScrolled
+    ? "bg-white/80 backdrop-blur-xl border-b border-emerald-100 shadow-lg py-2"
+    : "bg-white/70 backdrop-blur-xl border-b border-gray-100 py-4"
+}`}>
       <div className="mx-auto max-w-7xl w-full px-4 md:px-6 flex items-center justify-between" ref={wrapRef}>
         <div className="flex items-center gap-4 lg:gap-10">
           <a href="/" onClick={(e) => { e.preventDefault(); navigate("/"); }} className="shrink-0">
-            <img src={assets.logo} alt="GreenCart" className="h-4 md:h-7 hover:scale-105 transition-transform" />
+            <img src={assets.logo} alt="GreenCart" className="h-8 md:h-10 hover:scale-105 transition-all duration-300 drop-shadow-sm" />
           </a>
 
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-6">
             {[
               { name: "Home", path: "/" },
               { name: "All Products", path: "/all-products" },
@@ -84,7 +88,23 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
                 key={item.name}
                 href={item.path}
                 onClick={(e) => { e.preventDefault(); navigate(item.path); }}
-                className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-emerald-600 transition-colors"
+                className="relative text-[11px]
+font-black
+uppercase
+tracking-[0.12em]
+text-gray-500
+hover:text-emerald-600
+transition-all
+duration-300
+after:absolute
+after:left-0
+after:-bottom-2
+after:h-[2px]
+after:w-0
+after:bg-emerald-500
+after:transition-all
+hover:after:w-full
+"
               >
                 {item.name}
               </a>
@@ -94,10 +114,15 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
 
         <div className="flex items-center gap-2 md:gap-6">
           {/* Search Bar */}
-          <div className="hidden lg:flex items-center gap-2.5 bg-gray-50 rounded-xl px-4 py-2 min-w-[240px] relative border border-transparent focus-within:border-emerald-200 focus-within:bg-white transition-all">
+          <div className="hidden lg:flex items-center gap-2.5 bg-white rounded-full px-5 py-3
+shadow-lg shadow-emerald-50
+border border-emerald-100
+hover:shadow-xl
+focus-within:shadow-xl
+transition-all w-[320px] relative border border-transparent focus-within:border-emerald-200 focus-within:bg-white transition-all">
             <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
-              placeholder="Track down fresh deals..."
+              placeholder="Search fruits, vegetables, dairy..."
               className="w-full outline-none bg-transparent text-[11px] font-bold placeholder-gray-300"
               value={searchQuery}
               onChange={(e) => { setSearch?.(e.target.value); setShowSuggestions(true); }}
@@ -156,7 +181,8 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
             <a
               href="/cart"
               onClick={(e) => { e.preventDefault(); navigate("/cart"); }}
-              className="group relative flex items-center justify-center p-2 md:p-3 rounded-xl md:rounded-2xl bg-gray-900 text-white hover:bg-emerald-600 transition-all shadow-xl shadow-gray-200"
+              className="group relative flex items-center justify-center p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white
+hover:scale-110 hover:bg-emerald-600 transition-all shadow-xl shadow-gray-200"
             >
               <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
               {cartCount > 0 && (
@@ -268,7 +294,7 @@ function Dropdown({ user, onLogout }) {
   return (
     <div className="relative isolate" ref={ref}>
       <button
-        className="flex items-center gap-2 md:gap-3 p-1 md:p-1.5 rounded-2xl bg-gray-50 border border-gray-100 hover:border-emerald-200 transition-all"
+        className="flex items-center gap-3 p-2 rounded-2xl bg-gradient-to-r from-emerald-50 to-green-100 border border-emerald-100 shadow-md hover:shadow-lg transition-all"
         onClick={() => setOpen(!open)}
       >
         <img
