@@ -14,89 +14,107 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/reviews")
 public class ReviewController {
 
-    private final ReviewRepository reviewRepo;
+        private final ReviewRepository reviewRepo;
 
-    private final ProductRepository productRepo;
+        private final ProductRepository productRepo;
 
-    // ADD REVIEW
-    @PostMapping
-    public Review addReview(
-            @RequestBody ReviewDTO dto,
-            HttpServletRequest req
-    ) {
+        // ADD REVIEW
+        @PostMapping
+        public Review addReview(
+                        @RequestBody ReviewDTO dto,
+                        HttpServletRequest req) {
 
-        User user =
-                (User) req.getAttribute("user");
+                User user = (User) req.getAttribute("user");
 
-        if (user == null) {
+                if (user == null) {
 
-            throw new RuntimeException(
-                    "Unauthorized"
-            );
+                        throw new RuntimeException(
+                                        "Unauthorized");
+                }
+
+                Product product = productRepo.findById(
+                                dto.getProductId()).orElseThrow();
+                if (reviewRepo.existsByUserAndProduct(
+                                user,
+                                product)) {
+                        throw new ResponseStatusException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "You already reviewed this product");
+                }
+
+                Review review = new Review();
+
+                review.setUser(user);
+
+                review.setProduct(product);
+
+                review.setRating(
+                                dto.getRating());
+
+                review.setComment(
+                                dto.getComment());
+
+                Review savedReview = reviewRepo.save(review);
+
+                // GET ALL PRODUCT REVIEWS
+                // GET ALL PRODUCT REVIEWS
+                List<Review> reviews = reviewRepo.findByProductOrderByCreatedAtDesc(
+                                product);
+
+                // CALCULATE AVERAGE
+                double avg = reviews.stream()
+                                .mapToInt(Review::getRating)
+                                .average()
+                                .orElse(0.0);
+
+                // UPDATE PRODUCT
+                product.setAverageRating(avg);
+
+                product.setReviewCount(
+                                reviews.size());
+
+                productRepo.save(product);
+
+                return savedReview;
         }
 
-        Product product =
-                productRepo.findById(
-                        dto.getProductId()
-                ).orElseThrow();
+        // GET PRODUCT REVIEWS
+        @GetMapping("/product/{id}")
+        public List<Review> productReviews(
+                        @PathVariable Long id) {
 
-        Review review =
-                new Review();
+                Product product = productRepo.findById(id)
+                                .orElseThrow();
 
-        review.setUser(user);
+                return reviewRepo
+                                .findByProductOrderByCreatedAtDesc(
+                                                product);
+        }
 
-        review.setProduct(product);
+        @GetMapping("/check/{productId}")
+        public boolean hasReviewed(
+                        @PathVariable Long productId,
+                        HttpServletRequest req) {
 
-        review.setRating(
-                dto.getRating()
-        );
+                User user = (User) req.getAttribute("user");
 
-        review.setComment(
-                dto.getComment()
-        );
+                if (user == null) {
+                        return false;
+                }
 
-        Review savedReview =
-        reviewRepo.save(review);
+                Product product = productRepo.findById(productId)
+                                .orElseThrow();
 
-// GET ALL PRODUCT REVIEWS
-List<Review> reviews =
-        reviewRepo.findByProduct(product);
-
-// CALCULATE AVERAGE
-double avg = reviews.stream()
-        .mapToInt(Review::getRating)
-        .average()
-        .orElse(0.0);
-
-// UPDATE PRODUCT
-product.setAverageRating(avg);
-
-product.setReviewCount(
-        reviews.size()
-);
-
-productRepo.save(product);
-
-return savedReview;
-    }
-
-    // GET PRODUCT REVIEWS
-    @GetMapping("/product/{id}")
-    public List<Review> productReviews(
-            @PathVariable Long id
-    ) {
-
-        Product product =
-                productRepo.findById(id)
-                        .orElseThrow();
-
-        return reviewRepo.findByProduct(
-                product
-        );
-    }
+                return reviewRepo.existsByUserAndProduct(
+                                user,
+                                product);
+        }
 }

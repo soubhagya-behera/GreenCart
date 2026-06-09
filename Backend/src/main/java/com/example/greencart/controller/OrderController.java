@@ -49,6 +49,25 @@ public class OrderController {
                     "Unauthorized");
         }
 
+        List<Order> orders = repo.findByUser(user);
+
+        for (Order order : orders) {
+
+            if ("Processing".equals(order.getOrderStatus())
+                    &&
+                    order.getCreatedAt()
+                            .plusMinutes(1)
+                            .isBefore(java.time.LocalDateTime.now())) {
+
+                order.setOrderStatus("Delivered");
+
+                order.setDeliveredAt(
+                        java.time.LocalDateTime.now());
+
+                repo.save(order);
+            }
+        }
+
         return repo.findByUser(user);
     }
 
@@ -63,6 +82,12 @@ public class OrderController {
 
         if (user == null) {
             throw new RuntimeException("Unauthorized");
+        }
+
+        if (dto.getAddress() == null ||
+                dto.getAddress().trim().isEmpty()) {
+            throw new RuntimeException(
+                    "Delivery address is required");
         }
 
         Cart cart = cartRepo.findByUser(user)

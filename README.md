@@ -70,7 +70,6 @@ The platform follows a scalable client-server architecture and integrates modern
 * Create Recipes
 * View Recipes
 * Recipe Categories
-* Admin Recipe Management
 
 ### 👨‍💼 Seller Dashboard
 

@@ -41,11 +41,21 @@ export default function Cart({ cart = {}, onInc, onDec, onRemove, onClearCart })
   async function handlePlaceOrder(){
     const t = getToken();
     if (!t) { navigate("/auth"); return; }
-    if (!addr) {
-      alert("Please add delivery address before placing order");
-      navigate("/address");
-      return;
-    }
+    if (
+  !addr ||
+  !addr.firstName ||
+  !addr.lastName ||
+  !addr.street ||
+  !addr.city ||
+  !addr.state ||
+  !addr.zipcode ||
+  !addr.country ||
+  !addr.phone
+) {
+  alert("Please complete your delivery address first");
+  navigate("/address");
+  return;
+}
     if (total < 1) { alert("Total amount must be at least ₹1"); return; }
     const insufficient = items.find(({ p, qty }) => (p.stock ?? 0) < qty);
     if (insufficient) {
