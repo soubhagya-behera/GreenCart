@@ -239,7 +239,27 @@ export default function Cart({
               {items.length} Master Items
             </p>
           </div>
+<div
+className="
+bg-gradient-to-r
+from-emerald-500
+to-green-600
+text-white
+rounded-3xl
+p-5
+shadow-xl
+"
+>
 
+  <p className="text-xs font-black uppercase tracking-widest">
+    🎉 Free Delivery Available
+  </p>
+
+  <p className="text-sm mt-2 opacity-90">
+    Your order qualifies for free delivery.
+  </p>
+
+</div>
           <div className="space-y-6">
             {items.map(({ p, qty }) => {
               const price = p.offerPrice ?? p.price;
@@ -270,6 +290,39 @@ export default function Cart({
                           <h3 className="text-base font-black text-gray-900 mb-0.5 hover:text-emerald-600 transition-colors">
                             {p.name}
                           </h3>
+                          <div className="mt-2 flex gap-2">
+
+  <span
+    className="
+    bg-emerald-50
+    text-emerald-600
+    text-[8px]
+    font-black
+    px-2
+    py-1
+    rounded-full
+    uppercase
+    "
+  >
+    Qty: {qty}
+  </span>
+
+  <span
+    className="
+    bg-gray-50
+    text-gray-500
+    text-[8px]
+    font-black
+    px-2
+    py-1
+    rounded-full
+    uppercase
+    "
+  >
+    Stock: {available}
+  </span>
+
+</div>
                         </div>
                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                           Category: {p.category}
@@ -319,7 +372,20 @@ export default function Cart({
 
                   <button
                     onClick={() => onRemove(p)}
-                    className="absolute top-6 right-6 md:static p-4 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                    className="
+absolute
+top-6
+right-6
+md:static
+p-4
+text-gray-300
+hover:text-red-500
+hover:bg-red-50
+hover:scale-110
+rounded-2xl
+transition-all
+duration-300
+"
                   >
                     <svg
                       className="w-6 h-6"
@@ -339,11 +405,42 @@ export default function Cart({
               );
             })}
 
-            {items.length === 0 && (
-              <div className="py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-gray-100 italic">
-                <p className="text-gray-400 font-black uppercase tracking-widest mb-4">
-                  Your bag is weightless
-                </p>
+           {items.length === 0 && (
+
+<div className="py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-gray-100">
+
+  <div className="text-6xl mb-5">
+    🛒
+  </div>
+
+  <h2 className="text-2xl font-black text-gray-900 mb-2">
+    Your Cart Is Empty
+  </h2>
+
+  <p className="text-gray-400 mb-6">
+    Discover fresh groceries and add them to your cart.
+  </p>
+
+  <a
+    href="#/all-products"
+    className="
+    bg-emerald-600
+    text-white
+    px-8
+    py-3
+    rounded-2xl
+    font-black
+    text-xs
+    uppercase
+    tracking-widest
+    "
+  >
+    Explore Collection
+  </a>
+
+</div>
+
+)}
                 <a
                   href="#/all-products"
                   className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100"
@@ -381,6 +478,40 @@ export default function Cart({
             <h2 className="text-xl font-black mb-4 italic tracking-tighter">
               Order Summary
             </h2>
+<div
+className="
+mb-5
+bg-gradient-to-r
+from-emerald-500
+to-green-600
+text-white
+rounded-2xl
+p-4
+"
+>
+
+  <p className="text-[8px] uppercase tracking-widest font-black">
+    Cart Value
+  </p>
+
+  <h3 className="text-3xl font-black mt-1">
+    ₹{total}
+  </h3>
+
+</div>
+            <div className="mb-6">
+
+  <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-gray-400 mb-2">
+    <span>Cart</span>
+    <span>Address</span>
+    <span>Payment</span>
+  </div>
+
+  <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+    <div className="w-1/3 h-full bg-emerald-600 rounded-full"></div>
+  </div>
+
+</div>
 
             <div className="space-y-3 mb-6 pb-4 border-b border-gray-100">
               <div className="flex justify-between items-center">
@@ -407,6 +538,33 @@ export default function Cart({
               </div>
             </div>
 
+            <div className="
+mb-5
+bg-emerald-50
+border
+border-emerald-100
+rounded-2xl
+p-4
+">
+
+  <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">
+    You Saved
+  </p>
+
+  <h3 className="text-2xl font-black text-emerald-700 mt-1">
+    ₹{
+      items.reduce(
+        (s,{p,qty}) =>
+        s +
+        ((p.price || 0) -
+        (p.offerPrice || p.price)) *
+        qty,
+        0
+      )
+    }
+  </h3>
+
+</div>
             <div className="flex justify-between items-end mb-8">
               <div>
                 <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">
@@ -434,6 +592,7 @@ export default function Cart({
                     Edit
                   </a>
                 </div>
+             
                 {addr ? (
                   <p className="text-[10px] font-medium text-gray-500 leading-relaxed truncate">
                     {addr.street}, {addr.city}, {addr.state}
@@ -443,6 +602,17 @@ export default function Cart({
                     Pending Details
                   </p>
                 )}
+                   <div className="mt-4">
+
+  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">
+    Estimated Delivery
+  </p>
+
+  <p className="text-sm font-black text-emerald-600 mt-1">
+    🚚 Within 30-45 Minutes
+  </p>
+
+</div>
               </div>
 
               <div>
@@ -466,7 +636,26 @@ export default function Cart({
                 </div>
               </div>
             </div>
+<div
+  className="
+  mb-4
+  bg-blue-50
+  border
+  border-blue-100
+  rounded-2xl
+  p-4
+  "
+>
 
+  <p className="text-[8px] font-black uppercase tracking-widest text-blue-600">
+    Purchase Protection
+  </p>
+
+  <p className="text-xs text-gray-600 mt-1">
+    Secure payments and guaranteed delivery.
+  </p>
+
+</div>
             <button
               onClick={handlePlaceOrder}
               disabled={placing || items.length === 0}
