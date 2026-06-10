@@ -48,26 +48,7 @@ export default function Categories() {
             <a
               key={c.text}
               href={`/category/${encodeURIComponent(c.path)}`}
-              className="
-                group
-                relative
-                flex
-                flex-col
-                items-center
-                bg-white
-                rounded-3xl
-                p-6
-                shadow-sm
-                border
-                border-gray-100
-                hover:bg-emerald-50
-                hover:border-emerald-200
-                hover:shadow-xl
-                hover:-translate-y-3
-                hover:scale-[1.03]
-                transition-all
-                duration-300
-              "
+              className="group relative flex flex-col items-center bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:bg-emerald-50 hover:border-emerald-200 hover:shadow-xl hover:-translate-y-3 hover:scale-[1.03] transition-all duration-300"
             >
               <div className="w-36 h-36 rounded-full bg-gray-50 flex items-center justify-center mb-4 overflow-hidden">
                 <img

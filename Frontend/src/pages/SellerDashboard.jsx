@@ -14,6 +14,7 @@ export default function SellerDashboard() {
   const [weight, setWeight] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [saving, setSaving] = useState(false);
+
   useEffect(() => {
     api("/seller/orders", { auth: true })
       .then((res) => setOrders(Array.isArray(res) ? res : []))
@@ -22,15 +23,17 @@ export default function SellerDashboard() {
       .then((res) => setMyProducts(Array.isArray(res) ? res : []))
       .catch(() => setMyProducts([]));
   }, []);
+
   const revenue = orders.reduce(
     (sum, o) => sum + (o.paymentStatus === "Paid" ? o.total || 0 : 0),
-    0,
+    0
   );
   const pending = orders.filter((o) => o.orderStatus !== "Delivered").length;
   const [assignOrderId, setAssignOrderId] = useState("");
   const [assignEmail, setAssignEmail] = useState("");
   const [statusOrderId, setStatusOrderId] = useState("");
   const [statusValue, setStatusValue] = useState("Processing");
+
   async function addProduct(e) {
     e.preventDefault();
     setSaving(true);
@@ -67,6 +70,7 @@ export default function SellerDashboard() {
       setSaving(false);
     }
   }
+
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-7xl px-4 py-6 space-y-6">
@@ -75,18 +79,10 @@ export default function SellerDashboard() {
             <p className="text-emerald-600 font-black uppercase tracking-widest text-xs">
               Seller Portal
             </p>
-
             <h1 className="text-5xl font-black text-gray-900 tracking-tight mt-2">
               Welcome Back 👋
             </h1>
-
-            <p
-              className="
-  text-gray-500
-  mt-3
-  text-lg
-"
-            >
+            <p className="text-gray-500 mt-3 text-lg">
               Manage products, orders and revenue.
             </p>
           </div>
@@ -95,25 +91,18 @@ export default function SellerDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="bg-gradient-to-r from-gray-900 to-black rounded-3xl p-6 text-white shadow-xl">
             <p className="text-sm uppercase tracking-widest">Revenue</p>
-
             <h2 className="text-5xl font-black mt-3">₹{revenue}</h2>
           </div>
-
           <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl">
             <p className="text-sm uppercase tracking-widest">Total Orders</p>
-
             <h2 className="text-5xl font-black mt-3">{orders.length}</h2>
           </div>
-
           <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-3xl p-6 text-white shadow-xl">
             <p className="text-sm uppercase tracking-widest">Pending Orders</p>
-
             <h2 className="text-5xl font-black mt-3">{pending}</h2>
           </div>
-
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl p-6 text-white shadow-xl">
             <p className="text-sm uppercase tracking-widest">Active Products</p>
-
             <h2 className="text-5xl font-black mt-3">{myProducts.length}</h2>
           </div>
         </div>
@@ -125,22 +114,10 @@ export default function SellerDashboard() {
                 behavior: "smooth",
               })
             }
-            className="
-bg-emerald-600
-hover:bg-emerald-700
-text-white
-px-6
-py-3
-rounded-2xl
-font-bold
-shadow-lg
-transition-all
-hover:scale-105
-"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl font-bold shadow-lg transition-all hover:scale-105"
           >
             + Add Product
           </button>
-
           <button
             onClick={() =>
               window.scrollTo({
@@ -148,29 +125,17 @@ hover:scale-105
                 behavior: "smooth",
               })
             }
-            className="
-bg-white
-border
-border-gray-200
-hover:border-emerald-500
-px-6
-py-3
-rounded-2xl
-font-bold
-shadow-sm
-transition-all
-hover:scale-105
-"
+            className="bg-white border border-gray-200 hover:border-emerald-500 px-6 py-3 rounded-2xl font-bold shadow-sm transition-all hover:scale-105"
           >
             Manage Orders
           </button>
         </div>
+
         <div className="rounded-xl border border-gray-200 p-6 shadow-sm bg-white">
           <div className="text-xl font-black text-gray-900 mb-6 italic tracking-tighter">
             Recent Logistics Activity
           </div>
 
-          {/* Header Grid */}
           <div className="hidden md:grid grid-cols-6 gap-4 px-4 py-3 bg-gray-50 rounded-xl mb-4 text-[10px] font-black uppercase tracking-widest text-gray-400">
             <div>Order ID</div>
             <div>Timestamp</div>
@@ -262,7 +227,7 @@ hover:scale-105
                     setAssignEmail("");
                   })
                   .catch((err) =>
-                    alert(err.message || "Failed to assign: check email/role."),
+                    alert(err.message || "Failed to assign: check email/role.")
                   );
               }}
               className="space-y-2 bg-blue-50/30 p-4 rounded-xl border border-blue-100"
@@ -390,6 +355,7 @@ hover:scale-105
             </form>
           </div>
         </div>
+
         <div className="rounded-xl border border-gray-200 p-6 bg-gray-50/10 mb-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-black text-gray-900 tracking-tighter italic">
@@ -561,7 +527,7 @@ hover:scale-105
                         <button
                           onClick={() =>
                             alert(
-                              `Mission Logs:\n${o.deliveryNotes?.map((n) => `[${n.role}] ${n.message} (@ ${new Date(n.at).toLocaleString()})`).join("\n") || "No logs available"}`,
+                              `Mission Logs:\n${o.deliveryNotes?.map((n) => `[${n.role}] ${n.message} (@ ${new Date(n.at).toLocaleString()})`).join("\n") || "No logs available"}`
                             )
                           }
                           className="p-2 bg-gray-900 text-white rounded-xl hover:bg-indigo-600 transition-colors shadow-sm"
@@ -600,18 +566,7 @@ hover:scale-105
             <h2 className="text-2xl font-black text-gray-900 tracking-tighter">
               My Product Catalog
             </h2>
-
-            <span
-              className="
-      bg-emerald-100
-      text-emerald-700
-      px-3
-      py-1
-      rounded-full
-      text-xs
-      font-black
-    "
-            >
+            <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-black">
               {myProducts.length}
             </span>
           </div>
@@ -619,19 +574,7 @@ hover:scale-105
             {myProducts.map((p) => (
               <div
                 key={p.id}
-                className="
-group
-bg-white
-rounded-3xl
-shadow-lg
-hover:shadow-2xl
-hover:-translate-y-1
-transition-all
-duration-300
-p-5
-relative
-overflow-hidden
-"
+                className="group bg-white rounded-3xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 p-5 relative overflow-hidden"
               >
                 <div className="absolute top-2 right-2 flex gap-1">
                   <button
@@ -644,7 +587,7 @@ overflow-hidden
                           auth: true,
                         });
                         setMyProducts((arr) =>
-                          arr.filter((x) => x.id !== p.id),
+                          arr.filter((x) => x.id !== p.id)
                         );
                       } catch (e) {
                         alert(e.message || "Delete failed");
@@ -693,7 +636,7 @@ overflow-hidden
                   onClick={async () => {
                     const nv = Number(
                       prompt("Update Inventory Level:", String(p.stock ?? 0)) ||
-                        "",
+                        ""
                     );
                     if (isNaN(nv) || nv < 0) return;
                     try {
@@ -704,8 +647,8 @@ overflow-hidden
                       });
                       setMyProducts((arr) =>
                         arr.map((x) =>
-                          x.id === p.id ? { ...x, stock: r.stock } : x,
-                        ),
+                          x.id === p.id ? { ...x, stock: r.stock } : x
+                        )
                       );
                     } catch (err) {
                       alert(err.message || "Update failed");
@@ -727,38 +670,13 @@ overflow-hidden
 
         <div
           id="add-product"
-          className="
-    rounded-[32px]
-    bg-gradient-to-br
-    from-white
-    to-emerald-50
-    border
-    border-emerald-100
-    p-10
-    shadow-[0_20px_60px_rgba(0,0,0,0.08)]
-    overflow-hidden
-    relative
-  "
+          className="rounded-[32px] bg-gradient-to-br from-white to-emerald-50 border border-emerald-100 p-10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] overflow-hidden relative"
         >
           <div className="mb-10">
-            <h2
-              className="
-  text-4xl
-  font-black
-  text-gray-900
-  tracking-tight
-"
-            >
+            <h2 className="text-4xl font-black text-gray-900 tracking-tight">
               Create New Product
             </h2>
-
-            <p
-              className="
-  text-gray-500
-  mt-3
-  text-lg
-"
-            >
+            <p className="text-gray-500 mt-3 text-lg">
               Upload and publish products to your store
             </p>
           </div>
@@ -769,19 +687,7 @@ overflow-hidden
             <div>
               <label className="text-sm text-gray-600">Name</label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
@@ -790,19 +696,7 @@ outline-none
             <div>
               <label className="text-sm text-gray-600">Category</label>
               <select
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
@@ -816,19 +710,7 @@ outline-none
             <div>
               <label className="text-sm text-gray-600">Price</label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 type="number"
                 min="0"
                 value={price}
@@ -841,19 +723,7 @@ outline-none
                 Offer Price (optional)
               </label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 type="number"
                 min="0"
                 value={offerPrice}
@@ -863,19 +733,7 @@ outline-none
             <div>
               <label className="text-sm text-gray-600">Stock Quantity</label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 type="number"
                 min="0"
                 value={stock}
@@ -887,19 +745,7 @@ outline-none
                 Weight / Measurement (e.g. 500g)
               </label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 placeholder="500g, 1kg, Pack of 6"
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
@@ -908,19 +754,7 @@ outline-none
             <div className="md:col-span-2">
               <label className="text-sm text-gray-600">Description</label>
               <textarea
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 rows="3"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -929,19 +763,7 @@ outline-none
             <div className="md:col-span-2">
               <label className="text-sm text-gray-600">Images</label>
               <input
-                className="
-w-full
-rounded-2xl
-border
-border-gray-200
-px-4
-py-3
-mt-2
-focus:border-emerald-500
-focus:ring-4
-focus:ring-emerald-100
-outline-none
-"
+                className="w-full rounded-2xl border border-gray-200 px-4 py-3 mt-2 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none"
                 type="file"
                 accept="image/*"
                 multiple
@@ -969,21 +791,7 @@ outline-none
             <div className="md:col-span-2">
               <button
                 disabled={saving}
-                className="
-w-full
-bg-gradient-to-r
-from-emerald-600
-to-green-500
-text-white
-font-black
-rounded-2xl
-py-4
-text-lg
-shadow-xl
-hover:scale-[1.02]
-transition-all
-disabled:opacity-60
-"
+                className="w-full bg-gradient-to-r from-emerald-600 to-green-500 text-white font-black rounded-2xl py-4 text-lg shadow-xl hover:scale-[1.02] transition-all disabled:opacity-60"
               >
                 {saving ? "Adding..." : "Add Product"}
               </button>

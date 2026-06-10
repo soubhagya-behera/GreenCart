@@ -24,7 +24,7 @@ export default function Address() {
       // Not logged in — try localStorage fallback
       try {
         const saved = JSON.parse(
-          localStorage.getItem("shippingAddress") || "null",
+          localStorage.getItem("shippingAddress") || "null"
         );
         if (saved) setForm((f) => ({ ...f, ...saved }));
       } catch {}
@@ -41,7 +41,7 @@ export default function Address() {
         // If backend fails, fallback to localStorage
         try {
           const saved = JSON.parse(
-            localStorage.getItem("shippingAddress") || "null",
+            localStorage.getItem("shippingAddress") || "null"
           );
           if (saved) setForm((f) => ({ ...f, ...saved }));
         } catch {}
@@ -119,42 +119,14 @@ export default function Address() {
           <form onSubmit={save} className="grid gap-3">
             <div className="grid grid-cols-2 gap-3">
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="👤 First Name"
                 value={form.firstName}
                 onChange={(e) => upd("firstName", e.target.value)}
                 required
               />
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="👤 Last Name"
                 value={form.lastName}
                 onChange={(e) => upd("lastName", e.target.value)}
@@ -162,21 +134,7 @@ shadow-sm
               />
             </div>
             <input
-              className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
               placeholder="📧 Email Address"
               type="email"
               value={form.email}
@@ -184,21 +142,7 @@ shadow-sm
               required
             />
             <input
-              className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
               placeholder="🏠 Street Address"
               value={form.street}
               onChange={(e) => upd("street", e.target.value)}
@@ -206,42 +150,14 @@ shadow-sm
             />
             <div className="grid grid-cols-2 gap-3">
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="📍 City"
                 value={form.city}
                 onChange={(e) => upd("city", e.target.value)}
                 required
               />
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="🗺️ State"
                 value={form.state}
                 onChange={(e) => upd("state", e.target.value)}
@@ -250,42 +166,14 @@ shadow-sm
             </div>
             <div className="grid grid-cols-2 gap-3">
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="📮 ZIP Code"
                 value={form.zipcode}
                 onChange={(e) => upd("zipcode", e.target.value)}
                 required
               />
               <input
-                className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
                 placeholder="🌎 Country"
                 value={form.country}
                 onChange={(e) => upd("country", e.target.value)}
@@ -293,21 +181,7 @@ shadow-sm
               />
             </div>
             <input
-              className="
-input-field
-py-3
-px-4
-bg-gray-50
-border
-border-gray-200
-rounded-xl
-text-sm
-focus:ring-2
-focus:ring-emerald-500
-focus:border-emerald-500
-transition-all
-shadow-sm
-"
+              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
               placeholder="📞 Phone Number"
               value={form.phone}
               onChange={(e) => upd("phone", e.target.value)}
@@ -316,21 +190,7 @@ shadow-sm
 
             <button
               disabled={saving}
-              className="
-w-full
-bg-gradient-to-r
-from-emerald-500
-to-green-600
-text-white
-font-bold
-py-4
-rounded-xl
-hover:scale-[1.02]
-transition-all
-shadow-lg
-mt-4
-disabled:opacity-60
-"
+              className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-4 rounded-xl hover:scale-[1.02] transition-all shadow-lg mt-4 disabled:opacity-60"
             >
               {saving ? "Saving..." : "SAVE ADDRESS & CONTINUE →"}
             </button>
