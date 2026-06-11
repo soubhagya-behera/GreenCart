@@ -231,9 +231,12 @@ export default function Cart({
               <span className="text-emerald-600 font-extrabold tracking-[0.2em] text-[9px] uppercase bg-emerald-50 px-2 py-1 rounded-full italic">
                 Your Selection
               </span>
-              <h1 className="text-2xl md:text-3xl font-black text-gray-900 mt-2 tracking-tighter italic">
-                Shopping Bag
-              </h1>
+              <h1 className="text-3xl md:text-5xl font-black text-gray-900 mt-2 tracking-tighter italic">
+  Shopping Bag
+</h1>
+<p className="text-gray-400 text-sm mt-2">
+  Review your products before checkout.
+</p>
             </div>
             <p className="text-gray-400 font-black text-[9px] uppercase tracking-widest">
               {items.length} Master Items
@@ -441,36 +444,32 @@ duration-300
 </div>
 
 )}
-                <a
-                  href="#/all-products"
-                  className="bg-emerald-600 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-emerald-100"
-                >
-                  Explore Collection
-                </a>
-              </div>
-            )}
-          </div>
+                
+             </div>
 
-          <a
-            href="/"
-            className="inline-flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.2em] hover:text-emerald-600 transition-colors py-2 group"
-          >
-            <svg
-              className="w-4 h-4 group-hover:-translate-x-1 transition-transform"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={3}
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            </svg>
-            Back to Boutique
-          </a>
-        </div>
+<a
+  href="/"
+  className="inline-flex items-center gap-3 text-xs font-black text-gray-400 uppercase tracking-[0.2em] hover:text-emerald-600 transition-colors py-2 group"
+>
+  <svg
+    className="w-4 h-4 group-hover:-translate-x-1 transition-transform"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={3}
+      d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+    />
+  </svg>
+
+  Back to Boutique
+</a>
+
+</div>
+        
 
         {/* Sidebar Summary */}
         <aside className="w-full lg:w-[400px] lg:shrink-0 mt-8 lg:mt-0">
@@ -691,9 +690,21 @@ p-4
                 "Confirm Order"
               )}
             </button>
-            <p className="text-[7px] text-center text-gray-300 uppercase font-black tracking-widest mt-4">
-              Secure Encrypted Checkout
-            </p>
+            <div className="mt-5 flex justify-center gap-4">
+
+  <span className="text-[10px]">
+    🔒 Secure
+  </span>
+
+  <span className="text-[10px]">
+    ⚡ Fast
+  </span>
+
+  <span className="text-[10px]">
+    🌱 Organic
+  </span>
+
+</div>
           </div>
         </aside>
       </div>
