@@ -332,7 +332,7 @@ http://localhost:5173
 
 ### Shopping Cart
 
-![Shopping Cart](screenshots/shopping-cart.png)
+![Shopping Cart](screenshots/Shopping-Cart.png)
 
 ---
 
@@ -356,7 +356,7 @@ http://localhost:5173
 
 ### Seller Dashboard
 
-![Seller Dashboard](screenshots/seller-dashboard.png)
+![Seller Dashboard](screenshots/Seller-Dashboard.png)
 
 ---
 
