@@ -28,7 +28,7 @@ The platform follows a scalable client-server architecture and integrates modern
 ## 📊 Project Statistics
 
 * 20+ REST APIs
-* 4 User Roles
+* 3 User Roles
 * JWT Authentication
 * Razorpay Payment Integration
 * Email OTP Verification
