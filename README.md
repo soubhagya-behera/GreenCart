@@ -314,7 +314,7 @@ http://localhost:5173
 
 ### Home Page
 
-![Home Page](screenshots/home-page.png)
+![Home Page](screenshots/Home-page.png)
 
 ---
 
@@ -332,7 +332,7 @@ http://localhost:5173
 
 ### Shopping Cart
 
-![Shopping Cart](screenshots/shopping-cart.png)
+![Shopping Cart](screenshots/Shopping-cart.png)
 
 ---
 
@@ -356,7 +356,7 @@ http://localhost:5173
 
 ### Seller Dashboard
 
-![Seller Dashboard](screenshots/seller-dashboard.png)
+![Seller Dashboard](screenshots/Seller-dashboard.png)
 
 ---
 
