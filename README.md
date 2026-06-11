@@ -314,7 +314,7 @@ http://localhost:5173
 
 ### Home Page
 
-![Home Page](screenshots/home-page.png)
+![Home Page](screenshots/Home-Page.png)
 
 ---
 
