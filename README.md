@@ -131,15 +131,6 @@ The platform follows a scalable client-server architecture and integrates modern
 
 ---
 
-### 🛠 Admin Features
-
-* User Management
-* Product Monitoring
-* Recipe Administration
-* Platform Management
-
----
-
 ### 💳 Payment Integration
 
 * Razorpay Payment Gateway
@@ -180,13 +171,6 @@ The platform follows a scalable client-server architecture and integrates modern
 * View Assigned Orders
 * Upload Delivery Proof
 * Verify Delivery OTP
-
-### Admin
-
-* Manage Users
-* Manage Products
-* Manage Recipes
-* Monitor Platform Activity
 
 ---
 
@@ -416,7 +400,7 @@ http://localhost:5173
 
 ### Soubhagya Kumar Behera
 
-MCA Student | Java Full Stack Developer
+Java Full Stack Developer | 2026
 
 * GitHub: https://github.com/soubhagya-behera
 
