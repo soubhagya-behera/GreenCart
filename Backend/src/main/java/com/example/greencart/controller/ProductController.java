@@ -16,8 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.greencart.util.RoleChecker;
+import com.example.greencart.event.InventoryUpdateEvent;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.Map;
 import java.util.List;
@@ -36,6 +39,7 @@ public class ProductController {
     private final WishlistRepository wishlistRepo;
     private final OrderItemRepository orderItemRepo;
     private final ReviewRepository reviewRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
     public List<Product> all() {
@@ -154,7 +158,16 @@ public Product updateStock(
     RoleChecker.checkRole(user, "seller", "admin");
     Product product = repo.findById(id).orElseThrow();
     product.setStock(body.get("stock"));
-    return repo.save(product);
+    Product saved = repo.save(product);
+    messagingTemplate.convertAndSend(
+            "/topic/inventory",
+            new InventoryUpdateEvent(
+                    saved.getId(),
+                    "INVENTORY_UPDATED",
+                    saved.getStock()
+            )
+    );
+    return saved;
 }
 
 @DeleteMapping("/{id}")

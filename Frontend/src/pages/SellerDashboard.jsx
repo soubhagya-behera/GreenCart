@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, apiForm, fileUrl } from "../lib/api";
 import { categories } from "../assets/greencart/greencart_assets/assets";
 import { useDialog } from "../components/common/DialogContext";
+import { subscribeInventory } from "../lib/inventorySocket";
 
 export default function SellerDashboard() {
   const { alert, confirm, prompt } = useDialog();
@@ -24,6 +25,16 @@ export default function SellerDashboard() {
     api("/products/mine", { auth: true })
       .then((res) => setMyProducts(Array.isArray(res) ? res : []))
       .catch(() => setMyProducts([]));
+  }, []);
+
+  useEffect(() => {
+    return subscribeInventory(({ productId, stock }) => {
+      setMyProducts((arr) =>
+        arr.map((x) =>
+          x.id === productId ? { ...x, stock } : x
+        )
+      );
+    });
   }, []);
 
   const revenue = orders.reduce(

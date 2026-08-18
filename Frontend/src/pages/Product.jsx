@@ -1,6 +1,7 @@
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import { useEffect, useState, useRef } from "react";
 import { api, fileUrl } from "../lib/api";
+import { subscribeInventory } from "../lib/inventorySocket";
 
 function RelatedCard({ p, onAdd }) {
   const price = p.offerPrice ?? p.price;
@@ -98,6 +99,19 @@ export default function Product({ id, onAdd }) {
     setSel(0);
     setQty(1);
   }, [id]);
+
+  useEffect(() => {
+    return subscribeInventory(({ productId, stock }) => {
+      setP((cur) =>
+        cur && cur.id === productId ? { ...cur, stock } : cur
+      );
+      setList((arr) =>
+        arr.map((x) =>
+          x.id === productId ? { ...x, stock } : x
+        )
+      );
+    });
+  }, []);
 
   if (loading)
     return (

@@ -2,6 +2,7 @@ import { assets } from "../assets/greencart/greencart_assets/assets";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import ProductCard from "./ProductCard";
+import { subscribeInventory } from "../lib/inventorySocket";
 import { } from "../assets/greencart/greencart_assets/assets";
 
 export default function ProductGrid({ onAdd, searchQuery = "" }) {
@@ -23,6 +24,16 @@ useEffect(() => {
       setList([]);
     });
 }, []);
+
+  useEffect(() => {
+    return subscribeInventory(({ productId, stock }) => {
+      setList((arr) =>
+        arr.map((x) =>
+          x.id === productId ? { ...x, stock } : x
+        )
+      );
+    });
+  }, []);
 
   const q = searchQuery.trim().toLowerCase();
   const products = q

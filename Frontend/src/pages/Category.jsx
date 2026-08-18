@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import ProductCard from "../components/ProductCard";
+import { subscribeInventory } from "../lib/inventorySocket";
 
 export default function Category({ name = "Vegetables", onAdd, searchQuery = "" }) {
   const [items, setItems] = useState([]);
@@ -22,6 +23,16 @@ console.log("Category Name:", name); // Only use real products from DB
       })
       .finally(() => setLoading(false));
   }, [name]);
+
+  useEffect(() => {
+    return subscribeInventory(({ productId, stock }) => {
+      setItems((arr) =>
+        arr.map((x) =>
+          x.id === productId ? { ...x, stock } : x
+        )
+      );
+    });
+  }, []);
 
   const q = searchQuery.trim().toLowerCase();
 

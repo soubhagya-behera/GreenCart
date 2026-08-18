@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import ProductCard from "../components/ProductCard";
+import { subscribeInventory } from "../lib/inventorySocket";
 
 export default function AllProducts({ onAdd, searchQuery = "" }) {
   const [list, setList] = useState([]);
@@ -17,6 +18,16 @@ export default function AllProducts({ onAdd, searchQuery = "" }) {
         setList([]);
       })
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    return subscribeInventory(({ productId, stock }) => {
+      setList((arr) =>
+        arr.map((x) =>
+          x.id === productId ? { ...x, stock } : x
+        )
+      );
+    });
   }, []);
 
   const q = searchQuery.trim().toLowerCase();
