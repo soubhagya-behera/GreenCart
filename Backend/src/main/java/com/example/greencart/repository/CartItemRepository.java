@@ -18,4 +18,6 @@ public interface CartItemRepository
             Cart cart,
             Product product
     );
+
+    void deleteByProduct(Product product);
 }

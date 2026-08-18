@@ -19,4 +19,6 @@ public interface ReviewRepository
             User user,
             Product product
     );
+
+    boolean existsByProduct(Product product);
 }

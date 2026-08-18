@@ -16,4 +16,6 @@ public interface WishlistRepository
             User user,
             Product product
     );
+
+    void deleteByProduct(Product product);
 }

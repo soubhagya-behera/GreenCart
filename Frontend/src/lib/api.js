@@ -33,7 +33,11 @@ export async function api(path, { method = "GET", body, auth = false } = {}) {
       : (err && (err.error || err.message)) || res.statusText || "Request failed";
     throw new Error(message);
   }
-  return res.json();
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return res.json();
+  }
+  return res.text();
 }
 export async function apiForm(path, formData, { auth = false, method = "POST" } = {}) {
   const headers = {};

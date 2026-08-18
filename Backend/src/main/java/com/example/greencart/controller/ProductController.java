@@ -1,12 +1,17 @@
 package com.example.greencart.controller;
 
 import com.example.greencart.entity.Product;
+import com.example.greencart.repository.CartItemRepository;
+import com.example.greencart.repository.OrderItemRepository;
 import com.example.greencart.repository.ProductRepository;
+import com.example.greencart.repository.ReviewRepository;
+import com.example.greencart.repository.WishlistRepository;
 import com.example.greencart.service.FileUploadService;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,10 +32,14 @@ public class ProductController {
 
     private final ProductRepository repo;
     private final FileUploadService fileUploadService;
+    private final CartItemRepository cartItemRepo;
+    private final WishlistRepository wishlistRepo;
+    private final OrderItemRepository orderItemRepo;
+    private final ReviewRepository reviewRepo;
 
     @GetMapping
     public List<Product> all() {
-        return repo.findAll();
+        return repo.findByActiveTrue();
     }
 
     @GetMapping("/categories")
@@ -149,6 +158,7 @@ public Product updateStock(
 }
 
 @DeleteMapping("/{id}")
+@Transactional
 public String deleteProduct(
         @PathVariable Long id,
         HttpServletRequest request
@@ -156,7 +166,27 @@ public String deleteProduct(
     User user = (User) request.getAttribute("user");
     if (user == null) throw new RuntimeException("Unauthorized");
     RoleChecker.checkRole(user, "seller", "admin");
-    repo.deleteById(id);
+
+    Product product = repo.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException(
+                            "Product not found"
+                    )
+            );
+
+    cartItemRepo.deleteByProduct(product);
+    wishlistRepo.deleteByProduct(product);
+
+    if (
+            orderItemRepo.existsByProduct(product)
+            || reviewRepo.existsByProduct(product)
+    ) {
+        product.setActive(false);
+        repo.save(product);
+        return "Product removed from store. Order and review history preserved.";
+    }
+
+    repo.delete(product);
     return "Product deleted";
 }
 
