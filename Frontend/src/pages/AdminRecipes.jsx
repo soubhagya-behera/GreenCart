@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { api, apiForm, fileUrl } from "../lib/api";
+import { useDialog } from "../components/common/DialogContext";
 
 export default function AdminRecipes() {
+  const { alert, confirm } = useDialog();
   const [name, setName] = useState("");
   const [serves, setServes] = useState(1);
   const [prepTime, setPrepTime] = useState("");
@@ -79,9 +81,17 @@ export default function AdminRecipes() {
       setImage(null);
       setPreview(null);
       await load();
-      alert("Recipe created successfully!");
+      await alert({
+        title: "Recipe Created",
+        message: "Recipe created successfully!",
+        type: "success",
+      });
     } catch (e) {
-      alert(e.message || "Failed to create recipe");
+      await alert({
+        title: "Create Failed",
+        message: e.message || "Failed to create recipe",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -433,16 +443,21 @@ export default function AdminRecipes() {
                         <button
                           className="bg-white p-2 rounded-xl shadow-lg hover:scale-110 transition-transform"
                           onClick={async () => {
-                            if (!confirm("Are you sure?")) return;
-                            try {
-                              await api(`/recipes/${r.id}`, {
-                                method: "DELETE",
-                                auth: true,
-                              });
-                              await load();
-                            } catch (e) {
-                              alert(e.message);
-                            }
+                            await confirm({
+                              title: "Delete Recipe",
+                              message: "Are you sure?",
+                              confirmText: "Delete",
+                              cancelText: "Cancel",
+                              danger: true,
+                              loadingText: "Deleting...",
+                              onConfirm: async () => {
+                                await api(`/recipes/${r.id}`, {
+                                  method: "DELETE",
+                                  auth: true,
+                                });
+                                await load();
+                              },
+                            });
                           }}
                         >
                           <svg
@@ -533,9 +548,17 @@ export default function AdminRecipes() {
                       });
                       setEditingId("");
                       await load();
-                      alert("Saved!");
+                      await alert({
+                        title: "Saved",
+                        message: "Saved!",
+                        type: "success",
+                      });
                     } catch (e) {
-                      alert(e.message);
+                      await alert({
+                        title: "Save Failed",
+                        message: e.message,
+                        type: "error",
+                      });
                     }
                   }}
                 >

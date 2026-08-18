@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import { navigate } from "../lib/router";
+import { useDialog } from "../components/common/DialogContext";
 
 export default function VerifyOtp() {
 
+  const { alert } = useDialog();
   const [otp, setOtp] = useState("");
 
   const email =
@@ -27,8 +29,12 @@ export default function VerifyOtp() {
         }
       );
 
-      alert(
-        "Email verified successfully"
+      await alert(
+        {
+          title: "Email Verified",
+          message: "Email verified successfully",
+          type: "success"
+        }
       );
 
       navigate("/auth");

@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { api } from "../lib/api";
+import { useDialog } from "./common/DialogContext";
 
 export default function ReviewModal({
   productId,
   onClose
 }) {
 
+  const { alert } = useDialog();
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
 
@@ -29,15 +31,22 @@ export default function ReviewModal({
 }
       });
 
-      alert("Review Added Successfully");
+      await alert({
+        title: "Review Added",
+        message: "Review Added Successfully",
+        type: "success",
+      });
 
       onClose();
 
     } catch (e) {
-  alert(
+  await alert({
+    title: "Review Failed",
+    message:
     e.message ||
-    "You already reviewed this product"
-  );
+    "You already reviewed this product",
+    type: "error"
+  });
 }
   }
 

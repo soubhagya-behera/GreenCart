@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import { api, getToken, fileUrl } from "../lib/api";
+import { useDialog } from "../components/common/DialogContext";
 
 export default function Cart({
   cart = {},
@@ -42,6 +43,7 @@ export default function Cart({
   const total = +(subtotal + tax).toFixed(2);
   const [method, setMethod] = useState("Cash On Delivery");
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const { alert } = useDialog();
 
   const addr = (() => {
     try {
@@ -77,21 +79,31 @@ export default function Cart({
       !addr.country ||
       !addr.phone
     ) {
-      alert("Please complete your delivery address first");
+      await alert({
+        title: "Address Required",
+        message: "Please complete your delivery address first",
+        type: "warning",
+      });
       navigate("/address");
       return;
     }
     if (total < 1) {
-      alert("Total amount must be at least ₹1");
+      await alert({
+        title: "Invalid Total",
+        message: "Total amount must be at least ₹1",
+        type: "warning",
+      });
       return;
     }
     const insufficient = items.find(({ p, qty }) => (p.stock ?? 0) < qty);
     if (insufficient) {
-      alert(
-        `Out of stock for "${insufficient.p.name}". Available: ${
+      await alert({
+        title: "Out of Stock",
+        message: `Out of stock for "${insufficient.p.name}". Available: ${
           insufficient.p.stock ?? 0
-        }. Please reduce quantity.`
-      );
+        }. Please reduce quantity.`,
+        type: "warning",
+      });
       return;
     }
     const lineItems = items.map(({ p, qty }) => ({
@@ -113,11 +125,19 @@ export default function Cart({
           body: { address: payload.address, paymentMethod: "COD" },
           auth: true,
         });
-        alert("Order placed successfully");
+        await alert({
+          title: "Order Placed",
+          message: "Order placed successfully",
+          type: "success",
+        });
         onClearCart && onClearCart();
         navigate("/orders");
       } catch (e) {
-        alert(e.message || "Could not place order. Please try again.");
+        await alert({
+          title: "Order Failed",
+          message: e.message || "Could not place order. Please try again.",
+          type: "error",
+        });
       } finally {
         setPlacing(false);
       }
@@ -142,7 +162,11 @@ export default function Cart({
 
         await loadRazorpayAndPay({ key, order: rzpOrder, payload, savedOrderId });
       } catch (e) {
-        alert(e.message || "Payment initialization failed");
+        await alert({
+          title: "Payment Failed",
+          message: e.message || "Payment initialization failed",
+          type: "error",
+        });
       } finally {
         setPlacing(false);
         setPaymentLoading(false);
@@ -156,10 +180,13 @@ export default function Cart({
       const s = document.createElement("script");
       s.src = "https://checkout.razorpay.com/v1/checkout.js";
       s.async = true;
-      s.onerror = () => {
-        alert(
-          "Failed to load payment gateway. Please check your internet connection."
-        );
+      s.onerror = async () => {
+        await alert({
+          title: "Payment Gateway Error",
+          message:
+            "Failed to load payment gateway. Please check your internet connection.",
+          type: "error",
+        });
         reject(new Error("Script load error"));
       };
       s.onload = () => {
@@ -188,7 +215,11 @@ export default function Cart({
               navigate("/orders");
               resolve();
             } catch (err) {
-              alert(err.message || "Payment verification failed");
+              await alert({
+                title: "Payment Failed",
+                message: err.message || "Payment verification failed",
+                type: "error",
+              });
               reject(err);
             } finally {
               setPaymentLoading(false);
@@ -342,9 +373,14 @@ shadow-xl
                           {qty}
                         </span>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (qty < available) onInc(p);
-                            else alert("Inventory Limit Reached");
+                            else
+                              await alert({
+                                title: "Inventory Limit Reached",
+                                message: "Inventory Limit Reached",
+                                type: "warning",
+                              });
                           }}
                           className="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center font-black text-gray-800 hover:text-emerald-600"
                         >

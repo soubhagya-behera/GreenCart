@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { api, apiForm, fileUrl } from "../lib/api";
 import { categories } from "../assets/greencart/greencart_assets/assets";
+import { useDialog } from "../components/common/DialogContext";
 
 export default function SellerDashboard() {
+  const { alert, confirm, prompt } = useDialog();
   const [orders, setOrders] = useState([]);
   const [myProducts, setMyProducts] = useState([]);
   const [name, setName] = useState("");
@@ -63,9 +65,17 @@ export default function SellerDashboard() {
       const res = await api("/products/mine", { auth: true });
 
       setMyProducts(Array.isArray(res) ? res : res.products || []);
-      alert("Product added");
+      await alert({
+        title: "Product Added",
+        message: "Product added",
+        type: "success",
+      });
     } catch (e) {
-      alert(e.message || "Failed to add product");
+      await alert({
+        title: "Add Failed",
+        message: e.message || "Failed to add product",
+        type: "error",
+      });
     } finally {
       setSaving(false);
     }
@@ -221,13 +231,21 @@ export default function SellerDashboard() {
                   body: { deliveryEmail: assignEmail },
                   auth: true,
                 })
-                  .then(() => {
-                    alert("Assigned delivery successfully");
+                  .then(async () => {
+                    await alert({
+                      title: "Delivery Assigned",
+                      message: "Assigned delivery successfully",
+                      type: "success",
+                    });
                     setAssignOrderId("");
                     setAssignEmail("");
                   })
-                  .catch((err) =>
-                    alert(err.message || "Failed to assign: check email/role.")
+                  .catch(async (err) =>
+                    await alert({
+                      title: "Assignment Failed",
+                      message: err.message || "Failed to assign: check email/role.",
+                      type: "error",
+                    })
                   );
               }}
               className="space-y-2 bg-blue-50/30 p-4 rounded-xl border border-blue-100"
@@ -274,11 +292,21 @@ export default function SellerDashboard() {
                   body: { status: statusValue },
                   auth: true,
                 })
-                  .then(() => {
-                    alert("Status updated");
+                  .then(async () => {
+                    await alert({
+                      title: "Status Updated",
+                      message: "Status updated",
+                      type: "success",
+                    });
                     setStatusOrderId("");
                   })
-                  .catch(() => alert("Failed to update status"));
+                  .catch(async () =>
+                    await alert({
+                      title: "Update Failed",
+                      message: "Failed to update status",
+                      type: "error",
+                    })
+                  );
               }}
               className="space-y-2"
             >
@@ -325,10 +353,18 @@ export default function SellerDashboard() {
                     body: { title, message: msg },
                     auth: true,
                   });
-                  alert("Announcement sent to subscribers!");
+                  await alert({
+                    title: "Announcement Sent",
+                    message: "Announcement sent to subscribers!",
+                    type: "success",
+                  });
                   e.target.reset();
                 } catch (err) {
-                  alert(err.message || "Failed to send");
+                  await alert({
+                    title: "Send Failed",
+                    message: err.message || "Failed to send",
+                    type: "error",
+                  });
                 }
               }}
               className="space-y-2"
@@ -525,10 +561,17 @@ export default function SellerDashboard() {
                           </svg>
                         </button>
                         <button
-                          onClick={() =>
-                            alert(
-                              `Mission Logs:\n${o.deliveryNotes?.map((n) => `[${n.role}] ${n.message} (@ ${new Date(n.at).toLocaleString()})`).join("\n") || "No logs available"}`
-                            )
+                          onClick={async () =>
+                            await alert({
+                              title: "Mission Logs",
+                              message: o.deliveryNotes
+                                ?.map(
+                                  (n) =>
+                                    `[${n.role}] ${n.message} (@ ${new Date(n.at).toLocaleString()})`
+                                )
+                                .join("\n") || "No logs available",
+                              type: "info",
+                            })
                           }
                           className="p-2 bg-gray-900 text-white rounded-xl hover:bg-indigo-600 transition-colors shadow-sm"
                           title="View Logs"
@@ -580,18 +623,23 @@ export default function SellerDashboard() {
                   <button
                     className="p-1.5 rounded-lg bg-red-50 text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={async () => {
-                      if (!confirm("Erase this listing permanently?")) return;
-                      try {
-                        await api(`/products/${p.id}`, {
-                          method: "DELETE",
-                          auth: true,
-                        });
-                        setMyProducts((arr) =>
-                          arr.filter((x) => x.id !== p.id)
-                        );
-                      } catch (e) {
-                        alert(e.message || "Delete failed");
-                      }
+                      await confirm({
+                        title: "Delete Product",
+                        message: "Erase this listing permanently?",
+                        confirmText: "Delete",
+                        cancelText: "Cancel",
+                        danger: true,
+                        loadingText: "Deleting...",
+                        onConfirm: async () => {
+                          await api(`/products/${p.id}`, {
+                            method: "DELETE",
+                            auth: true,
+                          });
+                          setMyProducts((arr) =>
+                            arr.filter((x) => x.id !== p.id)
+                          );
+                        },
+                      });
                     }}
                   >
                     <svg
@@ -634,26 +682,34 @@ export default function SellerDashboard() {
                 </div>
                 <button
                   onClick={async () => {
-                    const nv = Number(
-                      prompt("Update Inventory Level:", String(p.stock ?? 0)) ||
-                        ""
-                    );
-                    if (isNaN(nv) || nv < 0) return;
-                    try {
-                      const r = await api(`/products/${p.id}/stock`, {
-                        method: "PUT",
-                        auth: true,
-                        body: { stock: nv },
+                      await prompt({
+                        title: "Update Inventory Level",
+                        label: "Inventory Level",
+                        initialValue: String(p.stock ?? 0),
+                        confirmText: "Update",
+                        cancelText: "Cancel",
+                        loadingText: "Updating...",
+                        validate: (val) => {
+                          const n = Number(val);
+                          if (isNaN(n) || n < 0) {
+                            return "Please enter a valid stock level (non-negative number).";
+                          }
+                          return null;
+                        },
+                        onConfirm: async (val) => {
+                          const r = await api(`/products/${p.id}/stock`, {
+                            method: "PUT",
+                            auth: true,
+                            body: { stock: Number(val) },
+                          });
+                          setMyProducts((arr) =>
+                            arr.map((x) =>
+                              x.id === p.id ? { ...x, stock: r.stock } : x
+                            )
+                          );
+                        },
                       });
-                      setMyProducts((arr) =>
-                        arr.map((x) =>
-                          x.id === p.id ? { ...x, stock: r.stock } : x
-                        )
-                      );
-                    } catch (err) {
-                      alert(err.message || "Update failed");
-                    }
-                  }}
+                    }}
                   className="w-full mt-4 py-2 bg-gray-50 text-gray-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
                 >
                   Update Inventory

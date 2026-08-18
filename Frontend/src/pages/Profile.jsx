@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { api, apiForm, fileUrl } from "../lib/api";
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import { navigate } from "../lib/router";
+import { useDialog } from "../components/common/DialogContext";
 
 export default function Profile({ user, setUser }) {
+  const { alert } = useDialog();
   const [name, setName] = useState(user?.name || "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -47,7 +49,11 @@ export default function Profile({ user, setUser }) {
       setUser?.(me);
       setCurrentPassword("");
       setNewPassword("");
-      alert("Profile updated");
+      await alert({
+        title: "Profile Updated",
+        message: "Profile updated",
+        type: "success",
+      });
     } catch (e) {
       setErr(e.message || "Failed to update");
     } finally {
@@ -64,9 +70,17 @@ export default function Profile({ user, setUser }) {
       await apiForm("/auth/avatar", fd, { auth: true });
       const me = await api("/auth/me", { auth: true });
       setUser?.(me);
-      alert("Avatar updated");
+      await alert({
+        title: "Avatar Updated",
+        message: "Avatar updated",
+        type: "success",
+      });
     } catch (e) {
-      alert(e.message || "Failed to upload avatar");
+      await alert({
+        title: "Upload Failed",
+        message: e.message || "Failed to upload avatar",
+        type: "error",
+      });
     }
   }
 

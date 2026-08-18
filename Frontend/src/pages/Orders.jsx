@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, fileUrl } from "../lib/api";
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import ReviewModal from "../components/ReviewModal";
+import { useDialog } from "../components/common/DialogContext";
 
 const steps = ["Processing", "Packed", "Shipped", "OutForDelivery", "Delivered"];
 
@@ -14,20 +15,31 @@ const stepIcons = {
 };
 
 function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
+  const { alert, confirm } = useDialog();
   const isCancelled = o.orderStatus === "Cancelled";
   const currentIndex = isCancelled
     ? -1
     : Math.max(0, steps.indexOf(o.orderStatus || "Processing"));
 
   async function cancelOrder() {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
-    try {
-      await api(`/orders/${o.id}/cancel`, { method: "PUT", auth: true });
-      alert("Order cancelled successfully.");
-      onCancelled && onCancelled();
-    } catch (e) {
-      alert(e.message || "Cancellation failed");
-    }
+    const cancelled = await confirm({
+      title: "Cancel Order",
+      message: "Are you sure you want to cancel this order?",
+      confirmText: "Cancel Order",
+      cancelText: "Keep Order",
+      danger: true,
+      loadingText: "Cancelling...",
+      onConfirm: async () => {
+        await api(`/orders/${o.id}/cancel`, { method: "PUT", auth: true });
+      },
+    });
+    if (!cancelled) return;
+    await alert({
+      title: "Order Cancelled",
+      message: "Order cancelled successfully.",
+      type: "success",
+    });
+    onCancelled && onCancelled();
   }
 
   return (

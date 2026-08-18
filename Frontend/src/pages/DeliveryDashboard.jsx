@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, apiForm, fileUrl } from "../lib/api";
 import { assets } from "../assets/greencart/greencart_assets/assets";
+import { useDialog } from "../components/common/DialogContext";
 
 function StatusBadge({ status }) {
   const styles = {
@@ -19,6 +20,7 @@ function StatusBadge({ status }) {
 }
 
 function ResendOtpBtn({ orderId }) {
+  const { alert } = useDialog();
   const [cooldown, setCooldown] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,11 @@ function ResendOtpBtn({ orderId }) {
       await api(`/orders/${orderId}/otp/resend`, { method: "POST", auth: true });
       setCooldown(30);
     } catch (e) {
-      alert(e.message || "Failed to resend OTP");
+      await alert({
+        title: "Resend Failed",
+        message: e.message || "Failed to resend OTP",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -238,6 +244,7 @@ function OrderCard({ o, onPick, onDeliver, onNote, onProof }) {
 }
 
 export default function DeliveryDashboard() {
+  const { alert } = useDialog();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('active'); // 'active' or 'closed'
@@ -264,17 +271,29 @@ export default function DeliveryDashboard() {
       await api(`/orders/${o.id}/ack/pick`, { method: "PUT", auth: true });
       fetchOrders();
     } catch {
-      alert("Failed to acknowledge pickup");
+      await alert({
+        title: "Pickup Failed",
+        message: "Failed to acknowledge pickup",
+        type: "error",
+      });
     }
   }
 
   async function handleDeliver(o, otp) {
     try {
       await api(`/orders/${o.id}/ack/deliver`, { method: "PUT", auth: true, body: { otp } });
-      alert("Delivery recorded successfully!");
+      await alert({
+        title: "Delivered",
+        message: "Delivery recorded successfully!",
+        type: "success",
+      });
       fetchOrders();
     } catch (e) {
-      alert(e.message || "Invalid delivery code. Please verify with customer.");
+      await alert({
+        title: "Delivery Failed",
+        message: e.message || "Invalid delivery code. Please verify with customer.",
+        type: "error",
+      });
     }
   }
 
@@ -284,7 +303,11 @@ export default function DeliveryDashboard() {
       reset?.();
       fetchOrders();
     } catch(e){
-      alert(e.message || "Failed to add note");
+      await alert({
+        title: "Note Failed",
+        message: e.message || "Failed to add note",
+        type: "error",
+      });
     }
   }
 
@@ -296,9 +319,17 @@ export default function DeliveryDashboard() {
       await apiForm(`/orders/${o.id}/proof`, fd, { auth: true });
       reset?.();
       fetchOrders();
-      alert("Evidence uploaded");
+      await alert({
+        title: "Evidence Uploaded",
+        message: "Evidence uploaded",
+        type: "success",
+      });
     } catch(e){
-      alert(e.message || "Failed to upload proof");
+      await alert({
+        title: "Upload Failed",
+        message: e.message || "Failed to upload proof",
+        type: "error",
+      });
     }
   }
 
