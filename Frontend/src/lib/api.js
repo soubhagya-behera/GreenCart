@@ -26,9 +26,12 @@ export async function api(path, { method = "GET", body, auth = false } = {}) {
   ...(body && method !== "GET" ? { body: JSON.stringify(body) } : {}),
 });
   if (!res.ok) {
-    let err;
-    try { err = await res.json(); } catch { err = { error: res.statusText }; }
-    throw new Error(err.error || "Request failed");
+    let err = null;
+    try { err = await res.json(); } catch { /* non-JSON body */ }
+    const message = typeof err === "string"
+      ? err
+      : (err && (err.error || err.message)) || res.statusText || "Request failed";
+    throw new Error(message);
   }
   return res.json();
 }

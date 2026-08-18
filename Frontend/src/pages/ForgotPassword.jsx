@@ -11,35 +11,45 @@ export default function ForgotPassword() {
   const [verified, setVerified] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [loading, setLoading] = useState("");
 
   async function reqOtp(e) {
     e.preventDefault();
+    if (loading) return;
     setErr(""); setMsg("");
+    setLoading("otp");
     try {
       await api(`/auth/request-reset-otp?email=${encodeURIComponent(email)}`, { method: "POST" });
       setMsg("OTP sent to your email");
       setVerified(false);
       setStep(2);
     } catch (e) { setErr(e.message); }
+    finally { setLoading(""); }
   }
   async function verify(e) {
     e.preventDefault();
+    if (loading) return;
     setErr(""); setMsg("");
+    setLoading("verify");
     try {
       await api(`/auth/verify-reset-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`, { method: "POST" });
       setVerified(true);
       setMsg("OTP verified");
     } catch (e) { setErr(e.message); }
+    finally { setLoading(""); }
   }
   async function reset(e) {
     e.preventDefault();
+    if (loading) return;
     setErr(""); setMsg("");
     try {
       if (!verified) { setErr("Please verify OTP first"); return; }
+      setLoading("reset");
       await api("/auth/reset-password", { method: "POST", body: { email, otp, newPassword: password } });
       setMsg("Password reset successful. Please login.");
       navigate("/auth");
     } catch (e) { setErr(e.message); }
+    finally { setLoading(""); }
   }
 
   return (
@@ -50,13 +60,13 @@ export default function ForgotPassword() {
           {step===1 ? (
             <form onSubmit={reqOtp} className="space-y-3">
               <input className="w-full border rounded-lg px-4 py-2" type="email" placeholder="Email" value={email} onChange={(e)=>setEmail(e.target.value)} required />
-              <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3">Send OTP</button>
+              <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3 disabled:opacity-60 disabled:cursor-not-allowed" disabled={loading !== ""}>{loading === "otp" ? "Sending OTP..." : "Send OTP"}</button>
             </form>
           ) : (
             <>
               <form onSubmit={verify} className="space-y-3">
                 <input className="w-full border rounded-lg px-4 py-2" type="text" placeholder="OTP" value={otp} onChange={(e)=>setOtp(e.target.value)} required />
-                <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3">{verified?"Verified":"Verify OTP"}</button>
+                <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3 disabled:opacity-60 disabled:cursor-not-allowed" disabled={loading !== "" || verified}>{loading === "verify" ? "Verifying..." : verified ? "Verified" : "Verify OTP"}</button>
               </form>
               <form onSubmit={reset} className="space-y-3 mt-4">
                 <div className="relative">
@@ -68,7 +78,7 @@ export default function ForgotPassword() {
                     </svg>
                   </button>
                 </div>
-                <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3" disabled={!verified}>Reset Password</button>
+                <button className="w-full bg-emerald-600 text-white font-semibold rounded-lg py-3 disabled:opacity-60 disabled:cursor-not-allowed" disabled={!verified || loading !== ""}>{loading === "reset" ? "Saving..." : "Reset Password"}</button>
               </form>
             </>
           )}

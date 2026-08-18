@@ -161,7 +161,7 @@ public ResponseEntity<?> requestResetOtp(
         @RequestParam String email
 ) {
 
-    User user = userRepo.findByEmail(email)
+    User user = userRepo.findByEmailIgnoreCase(email)
             .orElseThrow(() ->
                     new RuntimeException("User not found")
             );
@@ -192,7 +192,7 @@ public ResponseEntity<?> verifyResetOtp(
         @RequestParam String otp
 ) {
 
-    User user = userRepo.findByEmail(email)
+    User user = userRepo.findByEmailIgnoreCase(email)
             .orElseThrow(() ->
                     new RuntimeException("User not found")
             );
@@ -221,7 +221,7 @@ public ResponseEntity<?> resetPassword(
         @RequestBody ResetPasswordDTO request
 ) {
 
-    User user = userRepo.findByEmail(
+    User user = userRepo.findByEmailIgnoreCase(
             request.getEmail()
     ).orElseThrow(() ->
             new RuntimeException("User not found")
