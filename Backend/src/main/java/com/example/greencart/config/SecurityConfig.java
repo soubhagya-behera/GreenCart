@@ -39,7 +39,6 @@ public class SecurityConfig {
                                                                 "/ws/**",
                                                                 "/auth/**",
                                                                 "/uploads/**",
-                                                                "/recipes/**",
                                                                 "/payment/**",
                                                                 "/reviews/**")
                                                 .permitAll()
@@ -52,6 +51,14 @@ public class SecurityConfig {
                                                                 "/products",
                                                                 "/products/categories",
                                                                 "/products/{id:[0-9]+}")
+                                                .permitAll()
+
+                                                // Public recipe viewing only.
+                                                // Recipe management (POST/PUT/DELETE)
+                                                // requires authentication below.
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/recipes",
+                                                                "/recipes/{id:[0-9]+}")
                                                 .permitAll()
 
                                                 .anyRequest().authenticated())

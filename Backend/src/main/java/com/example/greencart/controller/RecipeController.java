@@ -2,11 +2,17 @@ package com.example.greencart.controller;
 
 import com.example.greencart.entity.Recipe;
 import com.example.greencart.entity.RecipeIngredient;
+import com.example.greencart.entity.User;
 import com.example.greencart.repository.RecipeRepository;
+import com.example.greencart.util.AccessGuard;
+import com.example.greencart.exception.ForbiddenException;
+import com.example.greencart.exception.UnauthorizedException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,6 +33,24 @@ public class RecipeController {
     private final RecipeRepository recipeRepo;
 
     private final ObjectMapper objectMapper;
+
+    // Recipe management is restricted to sellers and admins, matching the
+    // existing "Manage Recipes" feature in both portals. Viewing stays public.
+    private User requireRecipeManager(HttpServletRequest request) {
+
+        User user = (User) request.getAttribute("user");
+
+        if (user == null) {
+            throw new UnauthorizedException();
+        }
+
+        AccessGuard.require(
+                AccessGuard.hasAnyRole(user, "seller", "admin"),
+                "Only sellers or admins can manage recipes"
+        );
+
+        return user;
+    }
 
     // GET ALL RECIPES
     @GetMapping
@@ -68,6 +92,8 @@ public class RecipeController {
     )
     public Recipe createRecipe(
 
+            HttpServletRequest request,
+
             @RequestParam String name,
 
             @RequestParam Integer serves,
@@ -87,6 +113,8 @@ public class RecipeController {
             MultipartFile file
 
     ) throws Exception {
+
+        requireRecipeManager(request);
 
         Recipe recipe = new Recipe();
 
@@ -159,6 +187,8 @@ File uploadDir =
     )
     public Recipe updateRecipe(
 
+            HttpServletRequest request,
+
             @PathVariable Long id,
 
             @RequestParam String name,
@@ -183,6 +213,8 @@ File uploadDir =
             MultipartFile file
 
     ) throws Exception {
+
+        requireRecipeManager(request);
 
         Recipe recipe =
                 recipeRepo.findById(id)
@@ -248,8 +280,11 @@ File uploadDir =
     // DELETE RECIPE
     @DeleteMapping("/{id}")
     public Map<String, Boolean> deleteRecipe(
+            HttpServletRequest request,
             @PathVariable Long id
     ) {
+
+        requireRecipeManager(request);
 
         recipeRepo.deleteById(id);
 
