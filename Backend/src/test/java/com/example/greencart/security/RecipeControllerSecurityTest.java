@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.web.multipart.MultipartFile;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -148,5 +150,47 @@ class RecipeControllerSecurityTest {
         when(recipeRepo.existsById(7L)).thenReturn(true);
         assertTrue(controller.deleteRecipe(adminReq, 7L).get("ok"));
         verify(recipeRepo).deleteById(7L);
+    }
+
+    private MultipartFile image(String originalName) {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn(originalName);
+        return file;
+    }
+
+    @Test
+    void pathTraversalFilenameIsReplacedWithServerGeneratedName() throws Exception {
+        when(recipeRepo.save(any(Recipe.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Recipe created = controller.createRecipe(
+                requestFor(admin), "Img", 1, "[]",
+                null, null, null,
+                image("../../etc/passwd.png"));
+
+        assertNotNull(created.getImageUrl());
+        assertTrue(created.getImageUrl().matches("^/uploads/recipe_\\d+\\.png$"));
+    }
+
+    @Test
+    void disallowedImageExtensionIsRejected() {
+        assertThrows(RuntimeException.class, () -> controller.createRecipe(
+                requestFor(admin), "Bad", 1, "[]",
+                null, null, null,
+                image("malicious.exe")));
+    }
+
+    @Test
+    void uppercaseImageExtensionAcceptedAndLowercased() throws Exception {
+        when(recipeRepo.save(any(Recipe.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Recipe created = controller.createRecipe(
+                requestFor(admin), "Img", 1, "[]",
+                null, null, null,
+                image("Photo.JPG"));
+
+        assertTrue(created.getImageUrl().endsWith(".jpg"));
     }
 }

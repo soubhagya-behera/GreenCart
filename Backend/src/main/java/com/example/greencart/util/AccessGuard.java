@@ -68,6 +68,17 @@ public final class AccessGuard {
         return false;
     }
 
+    // Pure ID-based check that the actor is the customer of the order,
+    // independent of role.
+    public static boolean isOrderCustomer(User actor, Order order) {
+        return actor != null
+                && order != null
+                && actor.getId() != null
+                && order.getUser() != null
+                && order.getUser().getId() != null
+                && actor.getId().equals(order.getUser().getId());
+    }
+
     // Logistics workflow (pick/deliver/otp/notes/proof):
     // admin platform-wide, otherwise only the assigned delivery partner.
     public static boolean canManageLogistics(User actor, Order order) {

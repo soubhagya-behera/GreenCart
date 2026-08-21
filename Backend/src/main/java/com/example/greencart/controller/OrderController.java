@@ -40,7 +40,7 @@ public class OrderController {
 
     private final FileUploadService fileUploadService;
 
-    // GET MY ORDERS
+    // GET MY ORDERS (read-only: never mutates order status)
     @GetMapping("/my")
     public List<Order> myOrders(
             HttpServletRequest req) {
@@ -49,27 +49,7 @@ public class OrderController {
 
         if (user == null) {
 
-            throw new RuntimeException(
-                    "Unauthorized");
-        }
-
-        List<Order> orders = repo.findByUser(user);
-
-        for (Order order : orders) {
-
-            if ("Processing".equals(order.getOrderStatus())
-                    &&
-                    order.getCreatedAt()
-                            .plusMinutes(1)
-                            .isBefore(java.time.LocalDateTime.now())) {
-
-                order.setOrderStatus("Delivered");
-
-                order.setDeliveredAt(
-                        java.time.LocalDateTime.now());
-
-                repo.save(order);
-            }
+            throw new UnauthorizedException();
         }
 
         return repo.findByUser(user);

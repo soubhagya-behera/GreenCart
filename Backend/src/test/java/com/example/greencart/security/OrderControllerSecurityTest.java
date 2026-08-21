@@ -18,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class OrderControllerSecurityTest {
@@ -142,5 +146,21 @@ class OrderControllerSecurityTest {
 
         var otpResponse = controller.resendOtp(55L, requestFor(admin));
         assertEquals(200, otpResponse.getStatusCode().value());
+    }
+
+    @Test
+    void readingMyOrdersNeverMutatesProcessingOrdersToDelivered() {
+        Order processing = new Order();
+        processing.setId(77L);
+        processing.setUser(customer);
+        processing.setOrderStatus("Processing");
+        processing.setCreatedAt(LocalDateTime.now().minusHours(2));
+
+        when(repo.findByUser(customer)).thenReturn(List.of(processing));
+
+        List<Order> result = controller.myOrders(requestFor(customer));
+
+        assertEquals("Processing", result.get(0).getOrderStatus());
+        verify(repo, never()).save(any(Order.class));
     }
 }

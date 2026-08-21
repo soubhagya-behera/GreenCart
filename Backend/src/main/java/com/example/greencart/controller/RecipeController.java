@@ -52,6 +52,29 @@ public class RecipeController {
         return user;
     }
 
+    // Server-generated filename: client-supplied names never reach disk,
+    // so path traversal is impossible; the extension is whitelist-validated.
+    private String sanitizedImageName(MultipartFile file) {
+
+        String original = file.getOriginalFilename();
+
+        int dot = original != null ? original.lastIndexOf('.') : -1;
+
+        if (dot < 0 || dot == original.length() - 1) {
+            throw new RuntimeException(
+                    "Image file must have an extension");
+        }
+
+        String ext = original.substring(dot).toLowerCase();
+
+        if (!ext.matches("\\.(png|jpg|jpeg|webp|gif)")) {
+            throw new RuntimeException(
+                    "Only PNG, JPG, WEBP or GIF images are allowed");
+        }
+
+        return "recipe_" + System.currentTimeMillis() + ext;
+    }
+
     // GET ALL RECIPES
     @GetMapping
     public Map<String, List<Recipe>> listRecipes() {
@@ -145,10 +168,8 @@ public class RecipeController {
         // IMAGE UPLOAD
         if (file != null && !file.isEmpty()) {
 
-    String filename =
-            System.currentTimeMillis()
-            + "_"
-            + file.getOriginalFilename();
+    String filename = sanitizedImageName(file);
+
 File uploadDir =
         new File(
                 System.getProperty("user.dir"),
@@ -254,10 +275,7 @@ File uploadDir =
         // UPDATE IMAGE
         if (file != null && !file.isEmpty()) {
 
-            String filename =
-                    System.currentTimeMillis()
-                    + "_"
-                    + file.getOriginalFilename();
+            String filename = sanitizedImageName(file);
 
             Path uploadPath =
                     Paths.get("uploads");
