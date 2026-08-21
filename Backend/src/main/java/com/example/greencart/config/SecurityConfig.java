@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import org.springframework.http.HttpMethod;
+
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,11 +38,20 @@ public class SecurityConfig {
                                                 .requestMatchers(
                                                                 "/ws/**",
                                                                 "/auth/**",
-                                                                "/products/**",
                                                                 "/uploads/**",
                                                                 "/recipes/**",
                                                                 "/payment/**",
                                                                 "/reviews/**")
+                                                .permitAll()
+
+                                                // Public product browsing only.
+                                                // Mutations (POST/PUT/DELETE), image upload
+                                                // and seller-only reads (/products/mine)
+                                                // require authentication below.
+                                                .requestMatchers(HttpMethod.GET,
+                                                                "/products",
+                                                                "/products/categories",
+                                                                "/products/{id:[0-9]+}")
                                                 .permitAll()
 
                                                 .anyRequest().authenticated())

@@ -1,5 +1,11 @@
 package com.example.greencart.controller;
 
+import com.example.greencart.entity.User;
+import com.example.greencart.exception.ForbiddenException;
+import com.example.greencart.exception.UnauthorizedException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +26,20 @@ public class NewsletterController {
     }
 
     @PostMapping("/announce")
-    public Map<String, String> announce(@RequestBody Map<String, String> body) {
+    public Map<String, String> announce(
+            @RequestBody Map<String, String> body,
+            HttpServletRequest req
+    ) {
+        User user = (User) req.getAttribute("user");
+
+        if (user == null) {
+            throw new UnauthorizedException();
+        }
+
+        if (!"admin".equalsIgnoreCase(user.getRole())) {
+            throw new ForbiddenException("Only admins can send platform announcements");
+        }
+
         // TODO: send email to all subscribers
         System.out.println("Announcement: " + body.get("title"));
         return Map.of("message", "Announcement sent");

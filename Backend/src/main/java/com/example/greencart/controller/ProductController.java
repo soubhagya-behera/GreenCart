@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.greencart.util.RoleChecker;
+import com.example.greencart.util.AccessGuard;
+import com.example.greencart.exception.ForbiddenException;
+import com.example.greencart.exception.UnauthorizedException;
 import com.example.greencart.event.InventoryUpdateEvent;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -110,8 +113,20 @@ public Product create(
 }
     @PostMapping("/upload")
 public ResponseEntity<?> uploadImage(
+        HttpServletRequest request,
         @RequestParam("file") MultipartFile file
 ) {
+
+    User user = (User) request.getAttribute("user");
+
+    if (user == null) {
+        throw new UnauthorizedException();
+    }
+
+    AccessGuard.require(
+            AccessGuard.hasAnyRole(user, "seller", "admin"),
+            "Only sellers or admins can upload product images"
+    );
 
     try {
 
@@ -142,8 +157,11 @@ public ResponseEntity<Product> getById(@PathVariable Long id) {
 @GetMapping("/mine")
 public List<Product> mine(HttpServletRequest request) {
     User user = (User) request.getAttribute("user");
-    if (user == null) throw new RuntimeException("Unauthorized");
-    RoleChecker.checkRole(user, "seller", "admin");
+    if (user == null) throw new UnauthorizedException();
+    AccessGuard.require(
+            AccessGuard.hasAnyRole(user, "seller", "admin"),
+            "Access denied"
+    );
     return repo.findBySeller(user);
 }
 
@@ -154,9 +172,16 @@ public Product updateStock(
         HttpServletRequest request
 ) {
     User user = (User) request.getAttribute("user");
-    if (user == null) throw new RuntimeException("Unauthorized");
-    RoleChecker.checkRole(user, "seller", "admin");
+    if (user == null) throw new UnauthorizedException();
+    AccessGuard.require(
+            AccessGuard.hasAnyRole(user, "seller", "admin"),
+            "Access denied"
+    );
     Product product = repo.findById(id).orElseThrow();
+    AccessGuard.require(
+            AccessGuard.canManageProduct(user, product),
+            "You can only update your own products"
+    );
     product.setStock(body.get("stock"));
     Product saved = repo.save(product);
     messagingTemplate.convertAndSend(
@@ -177,8 +202,11 @@ public String deleteProduct(
         HttpServletRequest request
 ) {
     User user = (User) request.getAttribute("user");
-    if (user == null) throw new RuntimeException("Unauthorized");
-    RoleChecker.checkRole(user, "seller", "admin");
+    if (user == null) throw new UnauthorizedException();
+    AccessGuard.require(
+            AccessGuard.hasAnyRole(user, "seller", "admin"),
+            "Access denied"
+    );
 
     Product product = repo.findById(id)
             .orElseThrow(() ->
@@ -186,6 +214,11 @@ public String deleteProduct(
                             "Product not found"
                     )
             );
+
+    AccessGuard.require(
+            AccessGuard.canManageProduct(user, product),
+            "You can only delete your own products"
+    );
 
     cartItemRepo.deleteByProduct(product);
     wishlistRepo.deleteByProduct(product);

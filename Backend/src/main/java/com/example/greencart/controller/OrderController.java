@@ -4,6 +4,10 @@ import com.example.greencart.dto.CheckoutDTO;
 import com.example.greencart.entity.*;
 import com.example.greencart.repository.*;
 import com.example.greencart.service.FileUploadService;
+import com.example.greencart.util.AccessGuard;
+import com.example.greencart.util.OrderStatuses;
+import com.example.greencart.exception.ForbiddenException;
+import com.example.greencart.exception.UnauthorizedException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -205,8 +209,12 @@ public class OrderController {
     public Order ackPick(@PathVariable Long id, HttpServletRequest req) {
         User user = (User) req.getAttribute("user");
         if (user == null)
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException();
         Order order = repo.findById(id).orElseThrow();
+        AccessGuard.require(
+                AccessGuard.canManageLogistics(user, order),
+                "Only the assigned delivery partner or an admin can update this order"
+        );
         order.setOrderStatus("Picked Up");
         return repo.save(order);
     }
@@ -219,8 +227,12 @@ public class OrderController {
             HttpServletRequest req) {
         User user = (User) req.getAttribute("user");
         if (user == null)
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException();
         Order order = repo.findById(id).orElseThrow();
+        AccessGuard.require(
+                AccessGuard.canManageLogistics(user, order),
+                "Only the assigned delivery partner or an admin can update this order"
+        );
         order.setOrderStatus("Delivered");
         order.setDeliveredAt(java.time.LocalDateTime.now());
         return repo.save(order);
@@ -248,9 +260,9 @@ public class OrderController {
         }
 
         // Cannot cancel after shipping/delivery
-        if ("Picked Up".equals(order.getOrderStatus())
-                || "Out For Delivery".equals(order.getOrderStatus())
-                || "Delivered".equals(order.getOrderStatus())) {
+        if (OrderStatuses.PICKED_UP.equals(order.getOrderStatus())
+                || OrderStatuses.OUT_FOR_DELIVERY.equals(order.getOrderStatus())
+                || OrderStatuses.DELIVERED.equals(order.getOrderStatus())) {
 
             throw new RuntimeException(
                     "Order cannot be cancelled now");
@@ -281,8 +293,12 @@ public class OrderController {
             HttpServletRequest req) {
         User user = (User) req.getAttribute("user");
         if (user == null)
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException();
         Order order = repo.findById(id).orElseThrow();
+        AccessGuard.require(
+                AccessGuard.canManageLogistics(user, order),
+                "Only the assigned delivery partner or an admin can add notes"
+        );
         // Simple implementation: append note to a notes field
         // For now just return the order as-is
         return order;
@@ -297,9 +313,13 @@ public class OrderController {
             HttpServletRequest req) throws Exception {
         User user = (User) req.getAttribute("user");
         if (user == null)
-            throw new RuntimeException("Unauthorized");
-        String url = fileUploadService.uploadFile(file);
+            throw new UnauthorizedException();
         Order order = repo.findById(id).orElseThrow();
+        AccessGuard.require(
+                AccessGuard.canManageLogistics(user, order),
+                "Only the assigned delivery partner or an admin can upload proof"
+        );
+        String url = fileUploadService.uploadFile(file);
         // Add a proofImageUrl field to Order entity first
         // order.setProofImageUrl(url);
         return repo.save(order);
@@ -311,8 +331,12 @@ public class OrderController {
             HttpServletRequest req) {
         User user = (User) req.getAttribute("user");
         if (user == null)
-            throw new RuntimeException("Unauthorized");
+            throw new UnauthorizedException();
         Order order = repo.findById(id).orElseThrow();
+        AccessGuard.require(
+                AccessGuard.canManageLogistics(user, order),
+                "Only the assigned delivery partner or an admin can resend the OTP"
+        );
         // Generate new OTP and send to customer email
         String otp = String.valueOf(100000 + new java.util.Random().nextInt(900000));
         order.setDeliveryOtp(otp);

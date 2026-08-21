@@ -3,6 +3,7 @@ package com.example.greencart.controller;
 import com.example.greencart.dto.CouponDTO;
 
 import com.example.greencart.entity.*;
+import com.example.greencart.exception.UnauthorizedException;
 
 import com.example.greencart.repository.*;
 
@@ -48,6 +49,88 @@ public class CouponController {
         );
 
         return couponRepo.save(coupon);
+    }
+
+    // LIST ALL COUPONS (ADMIN)
+    @GetMapping("/admin/coupons")
+    public List<Coupon> allCoupons(
+            HttpServletRequest req
+    ) {
+
+        requireAdmin(req);
+
+        return couponRepo.findAll();
+    }
+
+    // UPDATE COUPON (ADMIN)
+    @PutMapping("/admin/coupons/{id}")
+    public Coupon updateCoupon(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest req
+    ) {
+
+        requireAdmin(req);
+
+        Coupon coupon = couponRepo.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Coupon not found"));
+
+        if (body.containsKey("code")
+                && body.get("code") != null) {
+            coupon.setCode(String.valueOf(body.get("code")));
+        }
+
+        if (body.get("discountPercent") instanceof Number n) {
+            coupon.setDiscountPercent(n.doubleValue());
+        }
+
+        if (body.get("minAmount") instanceof Number n) {
+            coupon.setMinAmount(n.doubleValue());
+        }
+
+        if (body.containsKey("active")
+                && body.get("active") != null) {
+            coupon.setActive(Boolean.parseBoolean(
+                    String.valueOf(body.get("active"))));
+        }
+
+        if (body.get("expiryDate") != null
+                && !String.valueOf(body.get("expiryDate")).isBlank()) {
+            coupon.setExpiryDate(LocalDateTime.parse(
+                    String.valueOf(body.get("expiryDate"))));
+        }
+
+        return couponRepo.save(coupon);
+    }
+
+    // DELETE COUPON (ADMIN)
+    @DeleteMapping("/admin/coupons/{id}")
+    public Map<String, String> deleteCoupon(
+            @PathVariable Long id,
+            HttpServletRequest req
+    ) {
+
+        requireAdmin(req);
+
+        if (!couponRepo.existsById(id)) {
+            throw new RuntimeException("Coupon not found");
+        }
+
+        couponRepo.deleteById(id);
+
+        return Map.of("message", "Coupon deleted");
+    }
+
+    private void requireAdmin(HttpServletRequest req) {
+
+        User admin = (User) req.getAttribute("user");
+
+        if (admin == null) {
+            throw new UnauthorizedException();
+        }
+
+        RoleChecker.checkRole(admin, "admin");
     }
 
     // GET ALL COUPONS
