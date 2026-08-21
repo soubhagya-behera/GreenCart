@@ -7,6 +7,8 @@ import com.example.greencart.exception.UnauthorizedException;
 
 import lombok.RequiredArgsConstructor;
 
+import org.json.JSONObject;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,13 +30,54 @@ public class PaymentController {
 
     private final OrderRepository orderRepo;
 
+   // CREATE RAZORPAY ORDER
+   // The chargeable amount is ALWAYS derived server-side from the
+   // authenticated user's own stored order total. Any client-supplied
+   // amount parameter is ignored by design.
    @PostMapping("/create-order")
-public ResponseEntity<String> createOrder(
-        @RequestParam Double amount
+public ResponseEntity<?> createOrder(
+        @RequestParam Long orderId,
+        HttpServletRequest request
 ) throws Exception {
 
+    User user = (User) request.getAttribute("user");
+
+    if (user == null) {
+        throw new UnauthorizedException();
+    }
+
+    Order order =
+            orderRepo.findById(orderId)
+                    .orElseThrow(() ->
+                            new RuntimeException("Order not found"));
+
+    AccessGuard.require(
+            AccessGuard.isAdmin(user)
+                    || AccessGuard.isOrderCustomer(user, order),
+            "You can only pay for your own orders"
+    );
+
+    if (order.getTotal() == null || order.getTotal() <= 0) {
+        throw new RuntimeException("Invalid order amount");
+    }
+
+    String razorpayJson =
+            razorpayService.createOrder(order.getTotal());
+
+    JSONObject razorpayOrder =
+            new JSONObject(razorpayJson);
+
     return ResponseEntity.ok(
-            razorpayService.createOrder(amount)
+            Map.of(
+                    "id",
+                    razorpayOrder.optString("id"),
+
+                    "amount",
+                    razorpayOrder.optInt("amount"),
+
+                    "currency",
+                    razorpayOrder.optString("currency", "INR")
+            )
     );
 }
 

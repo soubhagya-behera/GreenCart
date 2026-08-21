@@ -39,7 +39,6 @@ public class SecurityConfig {
                                                                 "/ws/**",
                                                                 "/auth/**",
                                                                 "/uploads/**",
-                                                                "/payment/**",
                                                                 "/reviews/**")
                                                 .permitAll()
 

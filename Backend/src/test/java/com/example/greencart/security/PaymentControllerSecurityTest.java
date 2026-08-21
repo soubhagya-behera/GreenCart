@@ -148,4 +148,93 @@ class PaymentControllerSecurityTest {
         assertEquals("Pending", own.getPaymentStatus());
         verify(orderRepo, never()).save(any());
     }
+
+    // ---- create-order integrity ----
+
+    private Order pricedOrder(User owner, long id, double total) {
+        Order o = orderOwnedBy(owner, id);
+        o.setTotal(total);
+        return o;
+    }
+
+    @Test
+    void unauthenticatedPaymentOrderCreationIsRejected() {
+        when(orderRepo.findById(66L))
+                .thenReturn(Optional.of(pricedOrder(customerA, 66L, 499.5)));
+
+        assertThrows(UnauthorizedException.class,
+                () -> controller.createOrder(66L, requestFor(null)));
+    }
+
+    @Test
+    void customerACannotCreatePaymentFromCustomerBsOrder() {
+        when(orderRepo.findById(55L))
+                .thenReturn(Optional.of(pricedOrder(customerB, 55L, 999.0)));
+
+        assertThrows(ForbiddenException.class,
+                () -> controller.createOrder(55L, requestFor(customerA)));
+
+        verifyNoInteractions(razorpayService);
+    }
+
+    @Test
+    void sellerCannotCreatePaymentFromAnotherCustomersOrder() {
+        when(orderRepo.findById(55L))
+                .thenReturn(Optional.of(pricedOrder(customerB, 55L, 999.0)));
+
+        assertThrows(ForbiddenException.class,
+                () -> controller.createOrder(55L, requestFor(seller)));
+
+        verifyNoInteractions(razorpayService);
+    }
+
+    @Test
+    void serverChargesExactlyTheStoredOrderTotal() throws Exception {
+        // The client no longer sends an amount at all; whatever it once sent
+        // is structurally ignored. Razorpay must receive the stored total.
+        Order own = pricedOrder(customerA, 66L, 499.5);
+        when(orderRepo.findById(66L)).thenReturn(Optional.of(own));
+        when(razorpayService.createOrder(499.5))
+                .thenReturn("{\"id\":\"order_1\",\"amount\":49950,\"currency\":\"INR\"}");
+
+        var response = controller.createOrder(66L, requestFor(customerA));
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body =
+                (java.util.Map<String, Object>) response.getBody();
+        assertEquals("order_1", body.get("id"));
+        assertEquals(49950, body.get("amount"));   // paise, from Razorpay itself
+        assertEquals("INR", body.get("currency"));
+        verify(razorpayService).createOrder(499.5);
+    }
+
+    @Test
+    void eachOrderChargesItsOwnServerSideTotal() throws Exception {
+        Order cheap = pricedOrder(customerA, 1L, 100.0);
+        Order pricey = pricedOrder(customerA, 2L, 999.0);
+        when(orderRepo.findById(1L)).thenReturn(Optional.of(cheap));
+        when(orderRepo.findById(2L)).thenReturn(Optional.of(pricey));
+        when(razorpayService.createOrder(any(Double.class))).thenReturn("{}");
+
+        controller.createOrder(1L, requestFor(customerA));
+        controller.createOrder(2L, requestFor(customerA));
+
+        verify(razorpayService).createOrder(100.0);
+        verify(razorpayService).createOrder(999.0);
+    }
+
+    @Test
+    void ordersWithoutValidTotalAreRejected() {
+        Order free = pricedOrder(customerA, 3L, 0.0);
+        Order nullTotal = orderOwnedBy(customerA, 4L);
+        when(orderRepo.findById(3L)).thenReturn(Optional.of(free));
+        when(orderRepo.findById(4L)).thenReturn(Optional.of(nullTotal));
+
+        assertThrows(RuntimeException.class,
+                () -> controller.createOrder(3L, requestFor(customerA)));
+        assertThrows(RuntimeException.class,
+                () -> controller.createOrder(4L, requestFor(customerA)));
+
+        verifyNoInteractions(razorpayService);
+    }
 }

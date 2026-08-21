@@ -154,7 +154,7 @@ export default function Cart({
         });
         const savedOrderId = orderRes.id;
 
-        const rzpOrder = await api(`/payment/create-order?amount=${total}`, {
+        const rzpOrder = await api(`/payment/create-order?orderId=${savedOrderId}`, {
           method: "POST",
           auth: true,
         });
