@@ -2,6 +2,7 @@ import { assets } from "../assets/greencart/greencart_assets/assets";
 import { useEffect, useState } from "react";
 import { api, setToken } from "../lib/api";
 import { navigate } from "../lib/router";
+import { homeFor } from "../lib/access";
 
 export default function Auth() {
   const [mode, setMode] = useState("login");
@@ -55,13 +56,7 @@ export default function Auth() {
 
       const me = await api("/auth/me", { auth: true });
 
-      navigate(
-        me.role === "seller" || me.role === "admin"
-          ? "/seller"
-          : me.role === "delivery"
-          ? "/delivery"
-          : "/"
-      );
+      navigate(homeFor(me.role));
     } catch (e) {
       setErr(e.message || "Authentication failed");
     } finally {

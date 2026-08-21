@@ -74,11 +74,20 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
               { name: "All Products", path: "/all-products" },
               { name: "Orders", path: "/orders" },
               { name: "Recipes", path: "/recipes" },
-              ...(user?.role === "seller" || user?.role === "admin"
+              ...(user?.role === "seller"
                 ? [
-                  { name: "Seller Hub", path: "/seller" },
-                  { name: "Manage Recipes", path: "/recipes-admin" },
-                ]
+                    { name: "Seller Hub", path: "/seller" },
+                    { name: "My Products", path: "/seller/products" },
+                    { name: "Orders", path: "/seller/orders" },
+                    { name: "Analytics", path: "/seller/analytics" },
+                    { name: "Manage Recipes", path: "/recipes-admin" },
+                  ]
+                : []),
+              ...(user?.role === "admin"
+                ? [
+                    { name: "Admin Dashboard", path: "/admin" },
+                    { name: "Manage Recipes", path: "/admin/recipes" },
+                  ]
                 : []),
               ...(user?.role === "delivery"
                 ? [{ name: "Delivery Hub", path: "/delivery" }]
@@ -236,11 +245,20 @@ hover:scale-110 hover:bg-emerald-600 transition-all shadow-xl shadow-gray-200"
               { name: "All Store Products", path: "/all-products" },
               { name: "Order History", path: "/orders" },
               { name: "Master Recipes", path: "/recipes" },
-              ...(user?.role === "seller" || user?.role === "admin"
+              ...(user?.role === "seller"
                 ? [
-                  { name: "Seller Command", path: "/seller" },
-                  { name: "Recipe Admin", path: "/recipes-admin" },
-                ]
+                    { name: "Seller Command", path: "/seller" },
+                    { name: "My Products", path: "/seller/products" },
+                    { name: "Orders", path: "/seller/orders" },
+                    { name: "Analytics", path: "/seller/analytics" },
+                    { name: "Recipe Admin", path: "/recipes-admin" },
+                  ]
+                : []),
+              ...(user?.role === "admin"
+                ? [
+                    { name: "Admin Dashboard", path: "/admin" },
+                    { name: "Recipe Admin", path: "/admin/recipes" },
+                  ]
                 : []),
               ...(user?.role === "delivery"
                 ? [{ name: "Logistics Hub", path: "/delivery" }]

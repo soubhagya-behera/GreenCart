@@ -13,8 +13,10 @@ import AllProducts from "./pages/AllProducts";
 import Product from "./pages/Product";
 import Address from "./pages/Address";
 import SellerDashboard from "./pages/SellerDashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import { api, getToken } from "./lib/api";
 import { navigate, currentPath } from "./lib/router";
+import { routeRedirect, isAdminRoute, isSellerRoute, homeFor } from "./lib/access";
 import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
@@ -210,26 +212,21 @@ const refreshCart = () => {
   }, []);
   useEffect(() => {
     const t = getToken();
-    if (t) {
-      api("/auth/me", { auth: true })
-        .then((me) => setUser(me))
-        .catch(() => setUser(null));
-    } else {
+    if (!t) {
       setUser(null);
-      // Protect sensitive routes
-      const protectedRoutes = ["/cart", "/orders", "/profile", "/address", "/dashboard", "/seller", "/delivery", "/recipes-admin"];
-      if (protectedRoutes.some(r => route.startsWith(r))) {
-        navigate("/auth");
-      }
+      return;
     }
+    api("/auth/me", { auth: true })
+      .then((me) => setUser(me))
+      .catch(() => {
+        setUser(null);
+        navigate("/auth");
+      });
   }, [route]);
   useEffect(() => {
-    if (!user) return;
-    if ((route === "/seller" || route === "/recipes-admin") && !(user.role === "seller" || user.role === "admin")) {
-      navigate("/");
-    }
-    if (route === "/delivery" && user.role !== "delivery") {
-      navigate("/");
+    const redirect = routeRedirect(route, user);
+    if (redirect && redirect !== route) {
+      navigate(redirect);
     }
   }, [route, user]);
   let body = (
@@ -250,7 +247,7 @@ const refreshCart = () => {
   }
   if (route === "/auth") {
   if (user) {
-    navigate("/");
+    navigate(homeFor(user.role));
   } else {
     body = <Auth />;
   }
@@ -275,17 +272,21 @@ const refreshCart = () => {
   if (route === "/address") {
     body = <Address />;
   }
-  if (route === "/seller") {
+  if (isSellerRoute(route)) {
     body = <SellerDashboard />;
+  }
+  if (isAdminRoute(route)) {
+    body =
+      route === "/admin/recipes" ? <AdminRecipes /> : <AdminDashboard />;
+  }
+  if (route === "/recipes-admin") {
+    body = <AdminRecipes />;
   }
   if (route === "/orders") {
     body = <Orders />;
   }
   if (route === "/recipes") {
     body = <Recipes />;
-  }
-  if (route === "/recipes-admin") {
-    body = <AdminRecipes />;
   }
   if (route.startsWith("/recipe/")) {
     const id = route.replace("/recipe/", "");
