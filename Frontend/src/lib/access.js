@@ -30,6 +30,14 @@ const AUTH_REQUIRED_PREFIXES = [
 ];
 
 
+const CUSTOMER_ONLY_ROUTES = ["/cart", "/all-products"];
+
+// Legacy recipe-management path: each portal now owns its own recipes page.
+export function recipesHomeFor(role) {
+  if (role === "admin") return "/admin/recipes";
+  return "/seller/recipes";
+}
+
 export function routeRedirect(route, user) {
   if (!getToken()) {
     return AUTH_REQUIRED_PREFIXES.some((p) => route.startsWith(p))
@@ -41,21 +49,36 @@ export function routeRedirect(route, user) {
 
   const role = user.role;
 
-  if (isAdminRoute(route)) {
-    return role === "admin" ? null : homeFor(role);
+  // ADMIN stays inside the administration shell.
+  if (role === "admin") {
+    if (isAdminRoute(route)) return null;
+    if (route === "/recipes-admin") return recipesHomeFor(role);
+    if (isSellerRoute(route) || route === "/delivery") return "/admin";
+    if (CUSTOMER_ONLY_ROUTES.includes(route)) return "/admin";
+    return null;
   }
 
-  if (isSellerRoute(route)) {
-    return role === "seller" ? null : homeFor(role);
+  // SELLER stays inside the seller portal.
+  if (role === "seller") {
+    if (isAdminRoute(route) || route === "/delivery") return "/seller";
+    if (isSellerRoute(route)) return null;
+    if (route === "/recipes-admin") return recipesHomeFor(role);
+    return null;
   }
 
-  if (route === "/delivery") {
-    return role === "delivery" ? null : homeFor(role);
+  // DELIVERY stays inside the delivery hub.
+  if (role === "delivery") {
+    if (route === "/delivery") return null;
+    if (isAdminRoute(route) || isSellerRoute(route)) return "/delivery";
+    if (route === "/recipes-admin") return "/delivery";
+    return null;
   }
 
-  if (route === "/recipes-admin") {
-    return role === "seller" || role === "admin" ? null : homeFor(role);
+  // CUSTOMER (role "user") never sees admin or seller surfaces.
+  if (isAdminRoute(route) || isSellerRoute(route) || route === "/delivery") {
+    return "/";
   }
+  if (route === "/recipes-admin") return "/";
 
   return null;
 }

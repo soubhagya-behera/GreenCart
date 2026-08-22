@@ -74,21 +74,6 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
               { name: "All Products", path: "/all-products" },
               { name: "Orders", path: "/orders" },
               { name: "Recipes", path: "/recipes" },
-              ...(user?.role === "seller"
-                ? [
-                    { name: "Seller Hub", path: "/seller" },
-                    { name: "My Products", path: "/seller/products" },
-                    { name: "Orders", path: "/seller/orders" },
-                    { name: "Analytics", path: "/seller/analytics" },
-                    { name: "Manage Recipes", path: "/recipes-admin" },
-                  ]
-                : []),
-              ...(user?.role === "admin"
-                ? [
-                    { name: "Admin Dashboard", path: "/admin" },
-                    { name: "Manage Recipes", path: "/admin/recipes" },
-                  ]
-                : []),
               ...(user?.role === "delivery"
                 ? [{ name: "Delivery Hub", path: "/delivery" }]
                 : []),
@@ -187,17 +172,19 @@ transition-all w-[320px] relative border border-transparent focus-within:border-
               </a>
             )}
 
-            <a
-              href="/cart"
-              onClick={(e) => { e.preventDefault(); navigate("/cart"); }}
-              className="group relative flex items-center justify-center p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white
+            {user?.role !== "admin" && (
+              <a
+                href="/cart"
+                onClick={(e) => { e.preventDefault(); navigate("/cart"); }}
+                className="group relative flex items-center justify-center p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white
 hover:scale-110 hover:bg-emerald-600 transition-all shadow-xl shadow-gray-200"
-            >
-              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-              {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-lg md:rounded-xl bg-emerald-500 text-white text-[10px] font-black border-2 border-white">{cartCount}</span>
-              )}
-            </a>
+              >
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                {cartCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-5 h-5 md:w-6 md:h-6 flex items-center justify-center rounded-lg md:rounded-xl bg-emerald-500 text-white text-[10px] font-black border-2 border-white">{cartCount}</span>
+                )}
+              </a>
+            )}
 
             <button
               className="lg:hidden p-2 rounded-xl bg-gray-900 text-white"
@@ -245,21 +232,6 @@ hover:scale-110 hover:bg-emerald-600 transition-all shadow-xl shadow-gray-200"
               { name: "All Store Products", path: "/all-products" },
               { name: "Order History", path: "/orders" },
               { name: "Master Recipes", path: "/recipes" },
-              ...(user?.role === "seller"
-                ? [
-                    { name: "Seller Command", path: "/seller" },
-                    { name: "My Products", path: "/seller/products" },
-                    { name: "Orders", path: "/seller/orders" },
-                    { name: "Analytics", path: "/seller/analytics" },
-                    { name: "Recipe Admin", path: "/recipes-admin" },
-                  ]
-                : []),
-              ...(user?.role === "admin"
-                ? [
-                    { name: "Admin Dashboard", path: "/admin" },
-                    { name: "Recipe Admin", path: "/admin/recipes" },
-                  ]
-                : []),
               ...(user?.role === "delivery"
                 ? [{ name: "Logistics Hub", path: "/delivery" }]
                 : []),
@@ -328,6 +300,36 @@ function Dropdown({ user, onLogout }) {
       </button>
       {open && (
         <div className="absolute right-0 mt-4 w-52 rounded-[2rem] bg-white shadow-2xl border border-gray-100 p-2.5 animate-bounce-in z-[300]">
+          {user.role === "seller" && (
+            <a
+              href="/seller"
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              onClick={(e) => { e.preventDefault(); navigate("/seller"); setOpen(false); }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+              Seller Portal
+            </a>
+          )}
+          {user.role === "admin" && (
+            <a
+              href="/admin"
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              onClick={(e) => { e.preventDefault(); navigate("/admin"); setOpen(false); }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+              Admin Console
+            </a>
+          )}
+          {user.role === "delivery" && (
+            <a
+              href="/delivery"
+              className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+              onClick={(e) => { e.preventDefault(); navigate("/delivery"); setOpen(false); }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+              Delivery Hub
+            </a>
+          )}
           <a
             href="/profile"
             className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"

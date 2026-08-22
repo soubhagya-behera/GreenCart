@@ -31,13 +31,27 @@ export async function api(path, { method = "GET", body, auth = false } = {}) {
     const message = typeof err === "string"
       ? err
       : (err && (err.error || err.message)) || res.statusText || "Request failed";
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = res.status;
+    throw error;
   }
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
     return res.json();
   }
   return res.text();
+}
+
+// Maps a failed api() call to a short, user-safe message.
+export function errorMessage(error, fallback = "Something went wrong") {
+  if (!error) return fallback;
+  switch (error.status) {
+    case 401: return "Your session has expired. Please sign in again.";
+    case 403: return "You do not have permission to perform this action.";
+    case 404: return "The requested item was not found.";
+    case 500: return "The server hit an error. Please try again shortly.";
+    default: return error.message || fallback;
+  }
 }
 export async function apiForm(path, formData, { auth = false, method = "POST" } = {}) {
   const headers = {};

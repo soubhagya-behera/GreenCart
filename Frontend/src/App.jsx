@@ -14,6 +14,13 @@ import Product from "./pages/Product";
 import Address from "./pages/Address";
 import SellerDashboard from "./pages/SellerDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUsers from "./pages/AdminUsers";
+import AdminSellers from "./pages/AdminSellers";
+import AdminProducts from "./pages/AdminProducts";
+import AdminOrders from "./pages/AdminOrders";
+import AdminAnalytics from "./pages/AdminAnalytics";
+import AdminCoupons from "./pages/AdminCoupons";
+import AdminLayout from "./components/admin/AdminLayout";
 import { api, getToken } from "./lib/api";
 import { navigate, currentPath } from "./lib/router";
 import { routeRedirect, isAdminRoute, isSellerRoute, homeFor } from "./lib/access";
@@ -26,6 +33,11 @@ import Recipes from "./pages/Recipes";
 import AdminRecipes from "./pages/AdminRecipes";
 import RecipeView from "./pages/RecipeView";
 import VerifyOtp from "./pages/VerifyOtp";
+import SellerProducts from "./pages/SellerProducts";
+import SellerOrders from "./pages/SellerOrders";
+import SellerAnalytics from "./pages/SellerAnalytics";
+import SellerStore from "./pages/SellerStore";
+import SellerLayout from "./components/seller/SellerLayout";
 
 export default function App() {
   const [cart, setCart] = useState({});
@@ -273,14 +285,28 @@ const refreshCart = () => {
     body = <Address />;
   }
   if (isSellerRoute(route)) {
-    body = <SellerDashboard />;
+    const sellerPages = {
+      "/seller": <SellerDashboard />,
+      "/seller/products": <SellerProducts />,
+      "/seller/orders": <SellerOrders />,
+      "/seller/analytics": <SellerAnalytics />,
+      "/seller/recipes": <AdminRecipes />,
+      "/seller/store": <SellerStore user={user} setUser={setUser} />,
+    };
+    body = sellerPages[route] || <SellerDashboard />;
   }
   if (isAdminRoute(route)) {
-    body =
-      route === "/admin/recipes" ? <AdminRecipes /> : <AdminDashboard />;
-  }
-  if (route === "/recipes-admin") {
-    body = <AdminRecipes />;
+    const adminPages = {
+      "/admin": <AdminDashboard />,
+      "/admin/users": <AdminUsers currentUser={user} />,
+      "/admin/sellers": <AdminSellers />,
+      "/admin/products": <AdminProducts />,
+      "/admin/orders": <AdminOrders />,
+      "/admin/analytics": <AdminAnalytics />,
+      "/admin/coupons": <AdminCoupons />,
+      "/admin/recipes": <AdminRecipes />,
+    };
+    body = adminPages[route] || <AdminDashboard />;
   }
   if (route === "/orders") {
     body = <Orders />;
@@ -297,6 +323,20 @@ const refreshCart = () => {
   }
   if (route === "/dashboard") {
     body = <UserDashboard />;
+  }
+  if (isAdminRoute(route)) {
+    return (
+      <AdminLayout user={user} route={route} onLogout={logout}>
+        {body}
+      </AdminLayout>
+    );
+  }
+  if (isSellerRoute(route)) {
+    return (
+      <SellerLayout user={user} route={route} onLogout={logout}>
+        {body}
+      </SellerLayout>
+    );
   }
   return (
     <>
