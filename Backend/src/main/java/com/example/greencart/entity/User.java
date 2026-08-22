@@ -35,6 +35,10 @@ private String password;
 
     private String storeName; // only for seller
 
+    // Delivery-partner availability (role "delivery" only).
+    // Online partners receive new delivery requests; offline do not.
+    private boolean online = false;
+
     private boolean verified = false;
 
     // Shipping Address

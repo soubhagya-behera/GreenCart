@@ -18,16 +18,22 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminSellers from "./pages/AdminSellers";
 import AdminProducts from "./pages/AdminProducts";
 import AdminOrders from "./pages/AdminOrders";
+import AdminDelivery from "./pages/AdminDelivery";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminCoupons from "./pages/AdminCoupons";
 import AdminLayout from "./components/admin/AdminLayout";
 import { api, getToken } from "./lib/api";
 import { navigate, currentPath } from "./lib/router";
-import { routeRedirect, isAdminRoute, isSellerRoute, homeFor } from "./lib/access";
+import { routeRedirect, isAdminRoute, isSellerRoute, isDeliveryRoute, homeFor } from "./lib/access";
 import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import Orders from "./pages/Orders";
 import DeliveryDashboard from "./pages/DeliveryDashboard";
+import DeliveryRequests from "./pages/DeliveryRequests";
+import DeliveryActive from "./pages/DeliveryActive";
+import DeliveryHistory from "./pages/DeliveryHistory";
+import DeliveryProfile from "./pages/DeliveryProfile";
+import DeliveryLayout from "./components/delivery/DeliveryLayout";
 import UserDashboard from "./pages/UserDashboard";
 import Recipes from "./pages/Recipes";
 import AdminRecipes from "./pages/AdminRecipes";
@@ -220,8 +226,11 @@ const refreshCart = () => {
   setCartItemIds(ids);
 })
         .catch(() => {
+          // Session could not be restored (expired/invalid token or backend
+          // error). Clear state only — never force-navigate away from public
+          // pages like "/". Protected routes are handled by routeRedirect.
           setUser(null);
-          navigate("/auth");
+          localStorage.removeItem("token");
         });
     }
   }, []);
@@ -234,8 +243,11 @@ const refreshCart = () => {
     api("/auth/me", { auth: true })
       .then((me) => setUser(me))
       .catch(() => {
+        // Same rule as above: drop the dead session silently. Guests stay on
+        // public routes; routeRedirect sends them to /auth only when the
+        // current route is actually protected.
         setUser(null);
-        navigate("/auth");
+        localStorage.removeItem("token");
       });
   }, [route]);
   useEffect(() => {
@@ -305,6 +317,7 @@ const refreshCart = () => {
       "/admin/sellers": <AdminSellers />,
       "/admin/products": <AdminProducts />,
       "/admin/orders": <AdminOrders />,
+      "/admin/delivery": <AdminDelivery />,
       "/admin/analytics": <AdminAnalytics />,
       "/admin/coupons": <AdminCoupons />,
       "/admin/recipes": <AdminRecipes />,
@@ -324,6 +337,18 @@ const refreshCart = () => {
   if (route === "/delivery") {
     body = <DeliveryDashboard />;
   }
+  if (route === "/delivery/requests") {
+    body = <DeliveryRequests />;
+  }
+  if (route === "/delivery/active") {
+    body = <DeliveryActive />;
+  }
+  if (route === "/delivery/history") {
+    body = <DeliveryHistory />;
+  }
+  if (route === "/delivery/profile") {
+    body = <DeliveryProfile />;
+  }
   if (route === "/dashboard") {
     body = <UserDashboard />;
   }
@@ -339,6 +364,13 @@ const refreshCart = () => {
       <SellerLayout user={user} route={route} onLogout={logout}>
         {body}
       </SellerLayout>
+    );
+  }
+  if (isDeliveryRoute(route)) {
+    return (
+      <DeliveryLayout user={user} route={route} onLogout={logout}>
+        {body}
+      </DeliveryLayout>
     );
   }
   return (

@@ -45,6 +45,9 @@ public class Order {
     @ManyToOne
     private User assignedDelivery;
 
+    // When a delivery partner accepted this order (null = unassigned)
+    private LocalDateTime assignedAt;
+
     // Order items
     @OneToMany(
             mappedBy = "order",

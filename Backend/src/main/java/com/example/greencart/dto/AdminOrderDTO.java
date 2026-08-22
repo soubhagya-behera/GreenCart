@@ -26,6 +26,8 @@ public class AdminOrderDTO {
 
     private LocalDateTime createdAt;
 
+    private LocalDateTime assignedAt;
+
     private LocalDateTime deliveredAt;
 
     private String orderStatus;
@@ -109,6 +111,7 @@ public class AdminOrderDTO {
 
         dto.setId(order.getId());
         dto.setCreatedAt(order.getCreatedAt());
+        dto.setAssignedAt(order.getAssignedAt());
         dto.setDeliveredAt(order.getDeliveredAt());
         dto.setOrderStatus(order.getOrderStatus());
         dto.setPaymentStatus(order.getPaymentStatus());

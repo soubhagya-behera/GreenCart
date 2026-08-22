@@ -264,6 +264,29 @@ export default function AdminOrders() {
             render: (o) => <StatusBadge value={o.orderStatus} />,
           },
           {
+            key: "assignedDelivery",
+            label: "Delivery Partner",
+            render: (o) =>
+              o.assignedDelivery ? (
+                <div className="text-xs max-w-[130px]">
+                  <p className="font-black text-gray-800 truncate">
+                    {o.assignedDelivery.name}
+                  </p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-indigo-500 mt-0.5">
+                    {["Picked Up", "OutForDelivery"].includes(o.orderStatus)
+                      ? "Out with partner"
+                      : o.orderStatus === "Delivered"
+                      ? "Completed"
+                      : "Assigned"}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-[10px] font-black uppercase tracking-widest text-gray-300 italic">
+                  Unassigned
+                </span>
+              ),
+          },
+          {
             key: "createdAt",
             label: "Placed",
             render: (o) => (
@@ -329,16 +352,36 @@ export default function AdminOrders() {
                 <p className="text-xs text-gray-600 leading-relaxed">
                   {selected.address || "-"}
                 </p>
-                {selected.assignedDelivery && (
-                  <p className="text-xs mt-2">
-                    <span className="font-black text-indigo-600 uppercase tracking-widest text-[9px] mr-1">
-                      Courier:
-                    </span>
-                    {selected.assignedDelivery.name} ({selected.assignedDelivery.email})
+                <div
+                  className={`mt-3 rounded-xl border p-3 ${
+                    selected.assignedDelivery
+                      ? "bg-indigo-50/60 border-indigo-100"
+                      : "bg-gray-50 border-gray-100"
+                  }`}
+                >
+                  <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">
+                    Delivery Assignment
                   </p>
-                )}
+                  {selected.assignedDelivery ? (
+                    <>
+                      <p className="text-xs font-black text-gray-800">
+                        🛵 {selected.assignedDelivery.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{selected.assignedDelivery.email}</p>
+                      {selected.assignedAt && (
+                        <p className="text-[10px] font-bold text-gray-400 mt-1">
+                          Assigned: {formatDateTime(selected.assignedAt)}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs font-bold text-gray-400 italic">
+                      Unassigned — waiting for a delivery partner to accept.
+                    </p>
+                  )}
+                </div>
                 {selected.deliveredAt && (
-                  <p className="text-xs text-emerald-600 mt-1 font-bold">
+                  <p className="text-xs text-emerald-600 mt-2 font-bold">
                     Delivered {formatDateTime(selected.deliveredAt)}
                   </p>
                 )}

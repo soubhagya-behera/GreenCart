@@ -1,5 +1,6 @@
 package com.example.greencart.controller;
 
+import com.example.greencart.service.DeliveryService;
 import com.example.greencart.service.RazorpayService;
 import com.example.greencart.util.AccessGuard;
 import com.example.greencart.exception.ForbiddenException;
@@ -29,6 +30,8 @@ public class PaymentController {
     private final RazorpayService razorpayService;
 
     private final OrderRepository orderRepo;
+
+    private final DeliveryService deliveryService;
 
    // CREATE RAZORPAY ORDER
    // The chargeable amount is ALWAYS derived server-side from the
@@ -133,6 +136,9 @@ public ResponseEntity<?> verifyPayment(
     );
 
     orderRepo.save(order);
+
+    // Paid UPI order is now deliverable — announce it to delivery partners.
+    deliveryService.notifyNewRequest(order);
 
     return ResponseEntity.ok(
             Map.of(

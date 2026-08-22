@@ -3,6 +3,7 @@ package com.example.greencart.controller;
 import com.example.greencart.entity.*;
 import com.example.greencart.repository.*;
 
+import com.example.greencart.dto.AdminDeliveryPartnerDTO;
 import com.example.greencart.dto.AdminOrderDTO;
 import com.example.greencart.dto.AdminUserDTO;
 import com.example.greencart.dto.AnalyticsDTO;
@@ -18,6 +19,8 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +107,35 @@ public class AdminController {
 
         return orderRepo.findAll().stream()
                 .map(AdminOrderDTO::from)
+                .collect(Collectors.toList());
+    }
+
+    // DELIVERY PARTNERS — roster with real workload figures.
+    // Active = orders in Picked Up / OutForDelivery assigned to the partner;
+    // completed counts come from deliveredAt stamps.
+    @GetMapping("/delivery-partners")
+    public List<AdminDeliveryPartnerDTO> deliveryPartners(
+            HttpServletRequest req
+    ) {
+
+        getAdmin(req);
+
+        LocalDate today = LocalDate.now();
+
+        LocalDateTime dayStart = today.atStartOfDay();
+
+        LocalDateTime dayEnd = today.plusDays(1).atStartOfDay();
+
+        return userRepo.findByRoleIgnoreCase("delivery").stream()
+                .map(partner -> {
+                    long active = orderRepo.countByAssignedDeliveryAndOrderStatusIn(
+                            partner,
+                            Set.of(OrderStatuses.PICKED_UP, OrderStatuses.OUT_FOR_DELIVERY));
+                    long completed = orderRepo.countByAssignedDeliveryAndDeliveredAtNotNull(partner);
+                    long completedToday = orderRepo.countByAssignedDeliveryAndDeliveredAtBetween(
+                            partner, dayStart, dayEnd);
+                    return AdminDeliveryPartnerDTO.from(partner, active, completed, completedToday);
+                })
                 .collect(Collectors.toList());
     }
 

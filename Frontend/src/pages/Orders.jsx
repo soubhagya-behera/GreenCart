@@ -17,9 +17,14 @@ const stepIcons = {
 function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
   const { alert, confirm } = useDialog();
   const isCancelled = o.orderStatus === "Cancelled";
+  // "Picked Up" sits between Shipped and OutForDelivery; the tracker has no
+  // dedicated step for it, so keep the bar where Shipped left off.
   const currentIndex = isCancelled
     ? -1
+    : o.orderStatus === "Picked Up"
+    ? steps.indexOf("Shipped")
     : Math.max(0, steps.indexOf(o.orderStatus || "Processing"));
+  const partnerName = !isCancelled ? o.assignedDelivery?.name : null;
 
   async function cancelOrder() {
     const cancelled = await confirm({
@@ -165,6 +170,25 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
               {o.address}
             </p>
           </div>
+
+          {partnerName && (
+            <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl px-3.5 py-3">
+              <span className="w-9 h-9 shrink-0 rounded-lg bg-white border border-emerald-100 flex items-center justify-center text-base">
+                🛵
+              </span>
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 leading-none">
+                  Delivery Partner
+                </p>
+                <p className="text-xs font-black text-gray-800 truncate mt-1">
+                  {partnerName}
+                  {o.orderStatus === "OutForDelivery" && (
+                    <span className="text-emerald-600 font-bold"> · On the way</span>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="lg:col-span-8">

@@ -10,26 +10,29 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 // DEMO AUTOMATION — intentionally NOT production payment logic.
 //
-// Simulates a fulfilment pipeline for the GreenCart demo: every successfully
-// created order becomes Delivered one minute after creation (measured from
-// createdAt). When that happens:
-//   - orderStatus becomes "Delivered" and deliveredAt is stamped;
-//   - a COD order whose payment is still "Pending" becomes "Paid", because
-//     the simulated delivery represents cash collection at the door;
-//   - online orders keep whatever payment state Razorpay verification gave
-//     them (already-Paid stays Paid; never-yet-paid stays Pending);
-//   - Cancelled orders are never touched.
+// The ONE auto-delivery mechanism for the GreenCart demo. Reworked for the
+// delivery-partner flow: an order is only delivered after a delivery
+// partner ACCEPTED it. The ~1 minute demo timer is measured from the
+// acceptance time (assignedAt; falls back to createdAt for legacy rows),
+// not from order creation:
 //
-// This replaces the old side effect (removed in c57919d) where GET
-// /orders/my silently mutated orders during reads. No read endpoint
-// mutates anything; this is the only auto-delivery mechanism.
+//   ORDER CREATED  ->  WAITING FOR PARTNER  ->  ACCEPTED  ->  OUT FOR DELIVERY
+//                                                              | (~1 min)
+//                                                              v
+//                                                          DELIVERED
+//
+// Completion itself is delegated to DeliveryService.markDelivered(), so the
+// payment rules live in exactly one place:
+//   - COD + Pending becomes Paid (cash collected at the door);
+//   - online orders keep their Razorpay-driven payment state;
+//   - unassigned orders are NEVER auto-delivered;
+//   - Cancelled orders are never touched.
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -40,52 +43,44 @@ import java.util.List;
 )
 public class DemoOrderAutoDeliveryService {
 
-    // Demo delay between order creation and simulated delivery.
+    // Demo delay between acceptance and simulated delivery.
     static final long DELIVERY_DELAY_MINUTES = 1;
 
     private final OrderRepository orderRepo;
 
+    private final DeliveryService deliveryService;
+
     @Scheduled(initialDelay = 60_000, fixedDelay = 15_000)
-    @Transactional
     public void autoDeliverMaturedOrders() {
 
         LocalDateTime cutoff =
                 LocalDateTime.now().minusMinutes(DELIVERY_DELAY_MINUTES);
 
-        List<Order> candidates = orderRepo.findAll();
+        // Only orders a partner already accepted and that are still in flight.
+        List<Order> candidates =
+                orderRepo.findByAssignedDeliveryIsNotNullAndDeliveredAtIsNull();
 
         for (Order order : candidates) {
 
-            String status = order.getOrderStatus();
+            String status = OrderStatuses.normalize(order.getOrderStatus());
 
+            // Only accepted, in-flight orders (Picked Up / OutForDelivery).
+            // Cancelled orders are never touched; unassigned ones are
+            // excluded by the repository query itself.
             if (status == null
-                    || OrderStatuses.DELIVERED.equalsIgnoreCase(status)
-                    || OrderStatuses.CANCELLED.equalsIgnoreCase(status)) {
+                    || !DeliveryService.IN_FLIGHT_STATUSES.contains(status)) {
                 continue;
             }
 
-            if (order.getCreatedAt() == null
-                    || order.getCreatedAt().isAfter(cutoff)) {
+            LocalDateTime acceptedAt = order.getAssignedAt() != null
+                    ? order.getAssignedAt()
+                    : order.getCreatedAt();
+
+            if (acceptedAt == null || acceptedAt.isAfter(cutoff)) {
                 continue;
             }
 
-            boolean codCollected =
-                    "COD".equalsIgnoreCase(order.getPaymentMethod())
-                            && !"Paid".equalsIgnoreCase(order.getPaymentStatus());
-
-            if (codCollected) {
-                order.setPaymentStatus("Paid");
-            }
-
-            order.setOrderStatus(OrderStatuses.DELIVERED);
-            order.setDeliveredAt(LocalDateTime.now());
-
-            orderRepo.save(order);
-
-            log.info("[DEMO] Order #{} auto-delivered after {} min{}",
-                    order.getId(),
-                    DELIVERY_DELAY_MINUTES,
-                    codCollected ? " · COD payment collected" : "");
+            deliveryService.markDelivered(order);
         }
     }
 }

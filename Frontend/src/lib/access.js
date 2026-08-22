@@ -17,6 +17,10 @@ export function isAdminRoute(route) {
   return route === "/admin" || route.startsWith("/admin/");
 }
 
+export function isDeliveryRoute(route) {
+  return route === "/delivery" || route.startsWith("/delivery/");
+}
+
 const AUTH_REQUIRED_PREFIXES = [
   "/cart",
   "/orders",
@@ -53,14 +57,14 @@ export function routeRedirect(route, user) {
   if (role === "admin") {
     if (isAdminRoute(route)) return null;
     if (route === "/recipes-admin") return recipesHomeFor(role);
-    if (isSellerRoute(route) || route === "/delivery") return "/admin";
+    if (isSellerRoute(route) || isDeliveryRoute(route)) return "/admin";
     if (CUSTOMER_ONLY_ROUTES.includes(route)) return "/admin";
     return null;
   }
 
   // SELLER stays inside the seller portal.
   if (role === "seller") {
-    if (isAdminRoute(route) || route === "/delivery") return "/seller";
+    if (isAdminRoute(route) || isDeliveryRoute(route)) return "/seller";
     if (isSellerRoute(route)) return null;
     if (route === "/recipes-admin") return recipesHomeFor(role);
     return null;
@@ -68,14 +72,13 @@ export function routeRedirect(route, user) {
 
   // DELIVERY stays inside the delivery hub.
   if (role === "delivery") {
-    if (route === "/delivery") return null;
     if (isAdminRoute(route) || isSellerRoute(route)) return "/delivery";
     if (route === "/recipes-admin") return "/delivery";
     return null;
   }
 
   // CUSTOMER (role "user") never sees admin or seller surfaces.
-  if (isAdminRoute(route) || isSellerRoute(route) || route === "/delivery") {
+  if (isAdminRoute(route) || isSellerRoute(route) || isDeliveryRoute(route)) {
     return "/";
   }
   if (route === "/recipes-admin") return "/";

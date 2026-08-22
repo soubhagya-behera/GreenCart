@@ -3,6 +3,7 @@ package com.example.greencart.controller;
 import com.example.greencart.dto.CheckoutDTO;
 import com.example.greencart.entity.*;
 import com.example.greencart.repository.*;
+import com.example.greencart.service.DeliveryService;
 import com.example.greencart.service.FileUploadService;
 import com.example.greencart.util.AccessGuard;
 import com.example.greencart.util.OrderStatuses;
@@ -39,6 +40,8 @@ public class OrderController {
     private final ProductRepository productRepo;
 
     private final FileUploadService fileUploadService;
+
+    private final DeliveryService deliveryService;
 
     // GET MY ORDERS (read-only: never mutates order status)
     @GetMapping("/my")
@@ -167,6 +170,12 @@ public class OrderController {
         savedOrder.setItems(
                 orderItemRepo.findByOrder(savedOrder));
 
+        // COD orders are deliverable immediately; UPI orders only become
+        // requests after payment verification (see PaymentController).
+        if (OrderStatuses.PROCESSING.equals(savedOrder.getOrderStatus())) {
+            deliveryService.notifyNewRequest(savedOrder);
+        }
+
         return savedOrder;
     }
 
@@ -178,10 +187,7 @@ public class OrderController {
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Unauthorized");
-        return repo.findAll().stream()
-                .filter(o -> o.getAssignedDelivery() != null
-                        && o.getAssignedDelivery().getId().equals(user.getId()))
-                .collect(java.util.stream.Collectors.toList());
+        return repo.findByAssignedDelivery(user);
     }
 
     // Acknowledge pick-up
@@ -200,6 +206,8 @@ public class OrderController {
     }
 
     // Acknowledge delivery (with OTP)
+    // Delegates to DeliveryService.markDelivered so the COD collection rule
+    // is identical to the demo auto-delivery timer's (single implementation).
     @PutMapping("/{id}/ack/deliver")
     public Order ackDeliver(
             @PathVariable Long id,
@@ -213,9 +221,7 @@ public class OrderController {
                 AccessGuard.canManageLogistics(user, order),
                 "Only the assigned delivery partner or an admin can update this order"
         );
-        order.setOrderStatus("Delivered");
-        order.setDeliveredAt(java.time.LocalDateTime.now());
-        return repo.save(order);
+        return deliveryService.markDelivered(order);
     }
 
     @PutMapping("/{id}/cancel")
@@ -263,7 +269,12 @@ public class OrderController {
 
         order.setOrderStatus("Cancelled");
 
-        return repo.save(order);
+        Order saved = repo.save(order);
+
+        // Partners watching this order refresh their dashboards.
+        deliveryService.publish("CANCELLED", saved);
+
+        return saved;
     }
 
     @PutMapping("/{id}/note")
@@ -279,17 +290,15 @@ public class OrderController {
                 AccessGuard.canManageLogistics(user, order),
                 "Only the assigned delivery partner or an admin can add notes"
         );
-        // Simple implementation: append note to a notes field
-        // For now just return the order as-is
-        return order;
+        order.setDeliveryNote(body.get("message"));
+        return repo.save(order);
     }
 
-    // Add FileUploadService to OrderController constructor first
-    // Add FileUploadService to OrderController constructor first
+    // Field name is "file" to match the frontend FormData key.
     @PostMapping("/{id}/proof")
     public Order uploadProof(
             @PathVariable Long id,
-            @RequestParam("image") MultipartFile file,
+            @RequestParam("file") MultipartFile file,
             HttpServletRequest req) throws Exception {
         User user = (User) req.getAttribute("user");
         if (user == null)
@@ -300,8 +309,7 @@ public class OrderController {
                 "Only the assigned delivery partner or an admin can upload proof"
         );
         String url = fileUploadService.uploadFile(file);
-        // Add a proofImageUrl field to Order entity first
-        // order.setProofImageUrl(url);
+        order.setProofImageUrl(url);
         return repo.save(order);
     }
 
