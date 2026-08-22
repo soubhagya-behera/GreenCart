@@ -1,27 +1,31 @@
-export default function SellerKpiCard({ label, value, hint, icon, tone = "emerald" }) {
-  const tones = {
+export default function SellerKpiCard({ label, value, hint, accent = "emerald", icon }) {
+  const accents = {
     emerald: "from-emerald-500 to-green-600",
-    gray: "from-gray-900 to-gray-800",
+    gray: "from-gray-800 to-black",
     orange: "from-orange-500 to-red-500",
-    indigo: "from-indigo-500 to-purple-600",
+    violet: "from-violet-500 to-purple-600",
   };
 
   return (
-    <div
-      className={`bg-gradient-to-r ${tones[tone] || tones.emerald} rounded-3xl p-6 text-white shadow-xl`}
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-sm uppercase tracking-widest font-bold opacity-90">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex items-start gap-4 hover:shadow-md transition-shadow">
+      <div
+        className={`w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br ${accents[accent] || accents.emerald} text-white flex items-center justify-center text-lg`}
+      >
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
           {label}
         </p>
-        {icon && <span className="text-xl">{icon}</span>}
-      </div>
-      <h2 className="text-4xl md:text-5xl font-black mt-3 tabular-nums">{value}</h2>
-      {hint && (
-        <p className="text-[10px] uppercase tracking-widest font-bold mt-2 opacity-70">
-          {hint}
+        <p className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight mt-1 truncate tabular-nums">
+          {value}
         </p>
-      )}
+        {hint && (
+          <p className="text-[10px] font-bold text-gray-400 mt-1 leading-snug">
+            {hint}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

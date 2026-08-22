@@ -1,8 +1,19 @@
 import { useEffect, useState } from "react";
 import { api, fileUrl, errorMessage } from "../lib/api";
 import { navigate } from "../lib/router";
-import { formatINR, formatDateTime } from "../lib/orderStatuses";
+import { formatINR } from "../lib/orderStatuses";
 import SellerKpiCard from "../components/seller/SellerKpiCard";
+import {
+  Panel,
+  StatusPill,
+  EmptyState,
+  ErrorState,
+  TableSkeleton,
+  HealthRow,
+  MiniBar,
+  RefreshButton,
+  formatOrderId,
+} from "../components/seller/ui";
 
 export default function SellerDashboard() {
   const [state, setState] = useState({
@@ -10,6 +21,7 @@ export default function SellerDashboard() {
     error: null,
     analytics: null,
     orders: [],
+    products: [],
   });
 
   const fetchData = () => {
@@ -17,16 +29,24 @@ export default function SellerDashboard() {
     Promise.allSettled([
       api("/seller/analytics", { auth: true }),
       api("/seller/orders", { auth: true }),
-    ]).then(([a, o]) => {
+      api("/products/mine", { auth: true }),
+    ]).then(([a, o, p]) => {
       if (a.status === "rejected") {
-        setState({ loading: false, error: errorMessage(a.reason), analytics: null, orders: [] });
+        setState((s) => ({
+          ...s,
+          loading: false,
+          error: errorMessage(a.reason),
+        }));
         return;
       }
       setState({
         loading: false,
         error: null,
         analytics: a.value || {},
-        orders: o.status === "fulfilled" && Array.isArray(o.value) ? o.value : [],
+        orders:
+          o.status === "fulfilled" && Array.isArray(o.value) ? o.value : [],
+        products:
+          p.status === "fulfilled" && Array.isArray(p.value) ? p.value : [],
       });
     });
   };
@@ -35,196 +55,339 @@ export default function SellerDashboard() {
     fetchData();
   }, []);
 
-  const { analytics, orders } = state;
+  const { analytics, orders, products } = state;
+
   const recentOrders = [...orders]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 8);
+    .slice(0, 6);
+
+  const outOfStock = products.filter(
+    (p) => Number(p.stock ?? 0) === 0
+  ).length;
+  const lowStock = products.filter((p) => {
+    const s = Number(p.stock ?? 0);
+    return s > 0 && s <= 5;
+  }).length;
+  const topProducts = analytics?.topProducts || [];
+  const maxRevenue = Math.max(...topProducts.map((t) => t.revenue || 0), 1);
 
   const quickActions = [
-    { label: "Add Product", path: "/seller/products" },
-    { label: "Manage Products", path: "/seller/products" },
-    { label: "Manage Orders", path: "/seller/orders" },
-    { label: "View Analytics", path: "/seller/analytics" },
+    { label: "Add Product", path: "/seller/products#add-product", icon: "＋" },
+    { label: "Manage Products", path: "/seller/products", icon: "📦" },
+    { label: "Manage Orders", path: "/seller/orders", icon: "🧾" },
+    { label: "View Analytics", path: "/seller/analytics", icon: "📈" },
+    { label: "Store Profile", path: "/seller/store", icon: "🏪" },
   ];
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <p className="text-emerald-600 font-black uppercase tracking-widest text-xs">
-            My Store
-          </p>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tighter mt-1">
-            Welcome back 👋
-          </h2>
-          <p className="text-gray-500 mt-2 text-sm">
-            Your store at a glance — only your products and your orders.
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
+            Store Overview
+          </h1>
+          <p className="text-sm text-gray-500 mt-1.5">
+            Track your products, orders and store performance.
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="bg-white border border-gray-200 hover:border-emerald-400 text-gray-600 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-colors"
-        >
-          Refresh
-        </button>
+        <RefreshButton onClick={fetchData} />
       </div>
 
-      {state.error && (
-        <div className="bg-white border border-red-100 rounded-2xl p-8 text-center mb-6">
-          <p className="text-sm font-black text-red-500 uppercase tracking-widest">
-            {state.error}
-          </p>
-          <button
-            onClick={fetchData}
-            className="mt-4 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl hover:bg-emerald-600 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+      <ErrorState error={state.error} onRetry={fetchData} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+      {/* KPI cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <SellerKpiCard
-          label="Revenue"
+          label="My Revenue"
           value={formatINR(analytics?.totalRevenue)}
-          hint="Paid · your items only"
+          hint="Paid orders · your items only"
           icon="₹"
-          tone="gray"
+          accent="gray"
         />
         <SellerKpiCard
-          label="Orders"
+          label="My Orders"
           value={analytics?.totalOrders ?? "–"}
-          hint="Containing your products"
+          hint="All time"
           icon="🧾"
-          tone="emerald"
+          accent="emerald"
         />
         <SellerKpiCard
           label="Pending Orders"
           value={analytics?.pendingOrders ?? "–"}
-          hint={`${analytics?.completedOrders ?? 0} delivered`}
+          hint="Requires attention"
           icon="⏳"
-          tone="orange"
+          accent="orange"
         />
         <SellerKpiCard
           label="Active Products"
           value={analytics?.activeProducts ?? "–"}
-          hint="Visible in the storefront"
+          hint={`${lowStock} low stock`}
           icon="📦"
-          tone="indigo"
+          accent="violet"
         />
       </div>
 
-      {/* Recent orders */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-          <h3 className="text-lg font-black text-gray-900 tracking-tight italic">
-            Recent Orders
-          </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* Recent orders */}
+        <div className="lg:col-span-2">
+          <Panel
+            title="Recent Orders"
+            subtitle="Your line items only"
+            actions={
+              <button
+                onClick={() => navigate("/seller/orders")}
+                className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700"
+              >
+                Manage all →
+              </button>
+            }
+          >
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[640px]">
+                <thead>
+                  <tr className="bg-gray-50/80">
+                    {["Order", "Customer", "Items", "Amount", "Payment", "Status"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className={`px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-gray-400 whitespace-nowrap ${
+                            h === "Amount" ? "text-right" : ""
+                          }`}
+                        >
+                          {h}
+                        </th>
+                      )
+                    )}
+                  </tr>
+                </thead>
+
+                {state.loading && (
+                  <TableSkeleton rows={5} cols={6} />
+                )}
+
+                {!state.loading && recentOrders.length === 0 && (
+                  <tbody>
+                    <tr>
+                      <td colSpan={6}>
+                        <EmptyState
+                          icon="🧾"
+                          title="No orders yet"
+                          message="Orders containing your products will appear here as soon as customers check out."
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                )}
+
+                {!state.loading && recentOrders.length > 0 && (
+                  <tbody className="divide-y divide-gray-50">
+                    {recentOrders.map((o) => (
+                      <tr
+                        key={o.id}
+                        className="hover:bg-emerald-50/40 transition-colors cursor-pointer"
+                        onClick={() => navigate("/seller/orders")}
+                      >
+                        <td className="px-4 py-3.5">
+                          <span className="text-xs font-black text-gray-900 whitespace-nowrap">
+                            {formatOrderId(o.id)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="text-xs min-w-0 max-w-[160px]">
+                            <p className="font-black text-gray-800 truncate">
+                              {o.user?.name || "-"}
+                            </p>
+                            <p className="text-gray-400 truncate">
+                              {o.user?.email || ""}
+                            </p>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1.5">
+                            {(o.items || []).slice(0, 2).map((it, i) => (
+                              <div
+                                key={i}
+                                className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0"
+                                title={`${it.name} × ${it.qty}`}
+                              >
+                                <img
+                                  src={
+                                    it.image
+                                      ? fileUrl(it.image)
+                                      : "/placeholder.png"
+                                  }
+                                  alt=""
+                                  className="w-full h-full object-contain p-0.5"
+                                />
+                              </div>
+                            ))}
+                            <span className="text-[10px] font-black text-gray-400 whitespace-nowrap">
+                              {(o.items || []).map((it) => `${it.name.split(" ")[0]} × ${it.qty}`).slice(0, 1)}
+                              {(o.items?.length || 0) > 1 &&
+                                ` +${o.items.length - 1}`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <span className="text-xs font-black text-gray-900 whitespace-nowrap">
+                            {formatINR(o.total)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <StatusPill value={o.paymentStatus} />
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <StatusPill value={o.orderStatus} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                )}
+              </table>
+            </div>
+          </Panel>
+        </div>
+
+        {/* Store health + quick actions */}
+        <div className="space-y-6">
+          <Panel title="Store Health" subtitle="Live catalogue signals">
+            <ul className="px-6 py-5 space-y-4">
+              <HealthRow
+                label="Active Products"
+                value={analytics?.activeProducts ?? products.filter((p) => p.active !== false).length}
+              />
+              <HealthRow
+                label="Low Stock (≤5)"
+                value={lowStock}
+                tone={lowStock ? "text-orange-500" : "text-gray-400"}
+                onClick={() => navigate("/seller/products")}
+              />
+              <HealthRow
+                label="Out of Stock"
+                value={outOfStock}
+                tone={outOfStock ? "text-red-500" : "text-gray-400"}
+                onClick={() => navigate("/seller/products")}
+              />
+              <HealthRow
+                label="Pending Fulfilment"
+                value={analytics?.pendingOrders ?? 0}
+                tone="text-blue-600"
+                onClick={() => navigate("/seller/orders")}
+              />
+            </ul>
+          </Panel>
+
+          <div className="bg-gradient-to-br from-emerald-700 to-green-900 rounded-2xl p-6 text-white shadow-sm">
+            <h2 className="text-lg font-black tracking-tight italic mb-1">
+              Quick Actions
+            </h2>
+            <p className="text-[10px] uppercase tracking-widest text-emerald-200/70 mb-4">
+              Jump into store operations
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {quickActions.map((a) => (
+                <button
+                  key={a.label}
+                  onClick={() => navigate(a.path)}
+                  className="bg-white/10 hover:bg-emerald-400/20 border border-white/10 hover:border-emerald-300/40 rounded-xl py-3 px-2 text-[10px] font-black uppercase tracking-widest text-emerald-50 hover:text-white transition-colors"
+                >
+                  <span className="block text-base leading-none mb-1.5">{a.icon}</span>
+                  {a.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Top products */}
+      <Panel
+        title="Top Products"
+        subtitle="Paid sales · your catalogue"
+        actions={
           <button
-            onClick={() => navigate("/seller/orders")}
+            onClick={() => navigate("/seller/analytics")}
             className="text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-700"
           >
-            Manage all →
+            Full analytics →
           </button>
-        </div>
-
-        <div className="hidden md:grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50/60 text-[9px] font-black uppercase tracking-widest text-gray-400">
-          <div className="col-span-2">Order ID</div>
-          <div className="col-span-3">Customer</div>
-          <div className="col-span-2">Items</div>
-          <div className="col-span-2">Amount</div>
-          <div className="col-span-1">Status</div>
-          <div className="col-span-2 text-right">Date</div>
-        </div>
-
-        <div className="divide-y divide-gray-50">
-          {state.loading &&
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="px-6 py-4">
-                <div className="h-3.5 bg-gray-100 rounded-full animate-pulse w-2/3" />
-              </div>
-            ))}
-
-          {!state.loading &&
-            recentOrders.map((o) => (
-              <div
-                key={o.id}
-                className="grid grid-cols-2 md:grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-emerald-50/30 transition-colors"
-              >
-                <div className="text-xs font-black text-gray-900 md:col-span-2">
-                  #{String(o.id).padStart(8, "0")}
-                </div>
-                <div className="text-xs md:col-span-3 min-w-0">
-                  <p className="font-bold text-gray-700 truncate">
-                    {o.user?.name || "-"}
-                  </p>
-                  <p className="text-gray-400 truncate">{o.user?.email || ""}</p>
-                </div>
-                <div className="flex -space-x-1.5 md:col-span-2">
-                  {(o.items || []).slice(0, 3).map((it, idx) => (
-                    <div
-                      key={idx}
-                      className="w-7 h-7 rounded-full border-2 border-white bg-gray-50 overflow-hidden shadow-sm"
-                      title={`${it.name} × ${it.qty}`}
+        }
+      >
+        {!state.loading && topProducts.length === 0 ? (
+          <EmptyState
+            icon="📈"
+            title="No paid sales yet"
+            message="Your best-selling products will rank here once orders start rolling in."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[520px]">
+              <thead>
+                <tr className="bg-gray-50/80">
+                  {["Product", "Units Sold", "Revenue"].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-gray-400 ${
+                        i === 2 ? "text-right" : ""
+                      }`}
                     >
-                      <img
-                        src={it.image ? fileUrl(it.image) : "/placeholder.png"}
-                        className="w-full h-full object-cover"
-                        alt=""
-                      />
-                    </div>
+                      {h}
+                    </th>
                   ))}
-                  <span className="text-[10px] font-black text-gray-400 self-center ml-2">
-                    {(o.items || []).length}
-                  </span>
-                </div>
-                <div className="text-xs font-black text-gray-900 md:col-span-2">
-                  {formatINR(o.total)}
-                </div>
-                <div className="md:col-span-1">
-                  <span
-                    className={`inline-block px-2.5 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${
-                      o.orderStatus === "Delivered"
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-100"
-                        : o.orderStatus === "Cancelled"
-                        ? "bg-red-50 text-red-500 border-red-100"
-                        : "bg-blue-50 text-blue-600 border-blue-100"
-                    }`}
-                  >
-                    {o.orderStatus || "-"}
-                  </span>
-                </div>
-                <div className="text-[10px] font-bold text-gray-400 whitespace-nowrap md:text-right md:col-span-2">
-                  {formatDateTime(o.createdAt)}
-                </div>
-              </div>
-            ))}
-
-          {!state.loading && recentOrders.length === 0 && (
-            <div className="py-14 text-center text-[10px] font-black text-gray-300 uppercase tracking-[0.25em] italic">
-              No orders yet — they appear here once customers buy your products
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Quick actions */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-        <h3 className="text-lg font-black text-gray-900 tracking-tight italic mb-4">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {quickActions.map((a) => (
-            <button
-              key={a.label}
-              onClick={() => navigate(a.path)}
-              className="border border-gray-100 hover:border-emerald-300 hover:bg-emerald-50/40 rounded-xl py-3 px-2 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-emerald-700 transition-colors"
-            >
-              {a.label}
-            </button>
-          ))}
-        </div>
-      </div>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {(state.loading ? Array.from({ length: 3 }) : topProducts).map(
+                  (t, i) =>
+                    state.loading ? (
+                      <tr key={i}>
+                        {[0, 1, 2].map((c) => (
+                          <td key={c} className="px-4 py-4">
+                            <div className="h-3.5 bg-gray-100 rounded-full animate-pulse w-1/2" />
+                          </td>
+                        ))}
+                      </tr>
+                    ) : (
+                      <tr key={t.productId} className="hover:bg-emerald-50/40 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                              <img
+                                src={
+                                  t.imageUrl
+                                    ? fileUrl(t.imageUrl)
+                                    : "/placeholder.png"
+                                }
+                                alt=""
+                                className="w-full h-full object-contain p-0.5"
+                              />
+                            </div>
+                            <span className="text-xs font-black text-gray-900 truncate">
+                              {t.productName || `Product #${t.productId}`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 w-48">
+                          <div className="flex items-center gap-3">
+                            <MiniBar ratio={(t.revenue || 0) / maxRevenue} />
+                            <span className="text-xs font-bold text-gray-500 tabular-nums whitespace-nowrap">
+                              {t.qtySold ?? 0} sold
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3.5 text-right">
+                          <span className="text-xs font-black text-gray-900 tabular-nums whitespace-nowrap">
+                            {formatINR(t.revenue)}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </>
   );
 }

@@ -2,6 +2,13 @@ import { useEffect, useState } from "react";
 import { api, fileUrl, errorMessage } from "../lib/api";
 import { formatINR } from "../lib/orderStatuses";
 import SellerKpiCard from "../components/seller/SellerKpiCard";
+import {
+  Panel,
+  EmptyState,
+  ErrorState,
+  MiniBar,
+  RefreshButton,
+} from "../components/seller/ui";
 
 export default function SellerAnalytics() {
   const [state, setState] = useState({
@@ -13,8 +20,12 @@ export default function SellerAnalytics() {
   const fetchData = () => {
     setState((s) => ({ ...s, loading: true, error: null }));
     api("/seller/analytics", { auth: true })
-      .then((data) => setState({ loading: false, error: null, analytics: data || {} }))
-      .catch((e) => setState({ loading: false, error: errorMessage(e), analytics: null }));
+      .then((data) =>
+        setState({ loading: false, error: null, analytics: data || {} })
+      )
+      .catch((e) =>
+        setState({ loading: false, error: errorMessage(e), analytics: null })
+      );
   };
 
   useEffect(() => {
@@ -22,150 +33,200 @@ export default function SellerAnalytics() {
   }, []);
 
   const a = state.analytics;
+  const totalOrders = a?.totalOrders ?? 0;
+  const completed = a?.completedOrders ?? 0;
+  const pending = a?.pendingOrders ?? 0;
   const completionRate =
-    a?.totalOrders > 0
-      ? Math.round(((a.completedOrders ?? 0) / a.totalOrders) * 100)
-      : 0;
+    totalOrders > 0 ? Math.round((completed / totalOrders) * 100) : 0;
+  const topProducts = a?.topProducts || [];
+  const maxRevenue = Math.max(...topProducts.map((t) => t.revenue || 0), 1);
 
   if (state.loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="bg-white rounded-3xl border border-gray-100 p-6 h-36 animate-pulse"
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (state.error) {
-    return (
-      <div className="bg-white border border-red-100 rounded-2xl p-8 text-center">
-        <p className="text-sm font-black text-red-500 uppercase tracking-widest">
-          {state.error}
-        </p>
-        <button
-          onClick={fetchData}
-          className="mt-4 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl hover:bg-emerald-600 transition-colors"
-        >
-          Retry
-        </button>
-      </div>
+      <>
+        <div className="h-10 w-56 bg-gray-100 rounded-xl animate-pulse mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-2xl border border-gray-100 p-5 h-28 animate-pulse"
+            />
+          ))}
+        </div>
+        <div className="bg-white rounded-2xl border border-gray-100 p-6 h-64 animate-pulse" />
+      </>
     );
   }
 
   return (
     <>
-      <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
         <div>
-          <p className="text-emerald-600 font-black uppercase tracking-widest text-xs">
-            My Store Performance
-          </p>
-          <h2 className="text-4xl font-black text-gray-900 tracking-tighter mt-1">
+          <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">
             Analytics
-          </h2>
-          <p className="text-gray-500 mt-2 text-sm">
-            Computed only from orders containing your products.
+          </h1>
+          <p className="text-sm text-gray-500 mt-1.5">
+            Store performance — computed only from orders containing your products.
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="bg-white border border-gray-200 hover:border-emerald-400 text-gray-600 text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl transition-colors"
-        >
-          Refresh
-        </button>
+        <RefreshButton onClick={fetchData} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+      <ErrorState error={state.error} onRetry={fetchData} />
+
+      {/* KPI row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         <SellerKpiCard
           label="Revenue"
           value={formatINR(a?.totalRevenue)}
           hint="Paid · your items only"
           icon="₹"
-          tone="gray"
+          accent="gray"
         />
         <SellerKpiCard
-          label="Orders"
-          value={a?.totalOrders ?? 0}
-          hint="Containing your products"
+          label="Order Count"
+          value={totalOrders}
+          hint="All time"
           icon="🧾"
-          tone="emerald"
+          accent="emerald"
         />
         <SellerKpiCard
-          label="Pending"
-          value={a?.pendingOrders ?? 0}
-          hint={`${a?.completedOrders ?? 0} delivered`}
+          label="Pending Orders"
+          value={pending}
+          hint={`${completed} delivered`}
           icon="⏳"
-          tone="orange"
+          accent="orange"
         />
         <SellerKpiCard
           label="Active Products"
           value={a?.activeProducts ?? 0}
           hint={`${completionRate}% fulfilment rate`}
           icon="📦"
-          tone="indigo"
+          accent="violet"
         />
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-50">
-          <h3 className="text-lg font-black text-gray-900 tracking-tight italic">
-            Top Products by Revenue
-          </h3>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-            Paid orders · your listings only
-          </p>
-        </div>
-
-        <ul className="divide-y divide-gray-50">
-          {(a?.topProducts || []).map((p, i) => {
-            const max = Math.max(
-              ...(a.topProducts || []).map((x) => x.revenue || 0),
-              1
-            );
-            return (
-              <li key={p.productId} className="flex items-center gap-4 px-6 py-4">
-                <span className="w-7 h-7 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-black flex items-center justify-center shrink-0">
-                  {i + 1}
+      {/* Fulfilment progress */}
+      <Panel
+        title="Fulfilment Progress"
+        subtitle="Your order lifecycle · all time"
+        className="mb-6"
+      >
+        <div className="px-6 py-5">
+          <div className="flex h-3 rounded-full overflow-hidden bg-gray-100 mb-4">
+            {totalOrders > 0 && completed > 0 && (
+              <div
+                className="bg-emerald-500"
+                style={{ width: `${(completed / totalOrders) * 100}%` }}
+              />
+            )}
+            {totalOrders > 0 && pending > 0 && (
+              <div
+                className="bg-blue-500"
+                style={{ width: `${(pending / totalOrders) * 100}%` }}
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-gray-500 font-bold">
+                <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500" />
+                Delivered
+              </span>
+              <span className="font-black text-gray-800 tabular-nums">
+                {completed}
+                <span className="text-gray-300 font-bold ml-1">
+                  ({totalOrders ? Math.round((completed / totalOrders) * 100) : 0}%)
                 </span>
-                <div className="w-10 h-10 rounded-lg bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
-                  <img
-                    src={p.imageUrl ? fileUrl(p.imageUrl) : "/placeholder.png"}
-                    alt=""
-                    className="w-full h-full object-contain p-0.5"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-gray-800 truncate">
-                    {p.productName || `Product #${p.productId}`}
-                  </p>
-                  <div className="mt-1.5 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-green-500"
-                      style={{ width: `${Math.max(6, ((p.revenue || 0) / max) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-xs font-black text-gray-900">
-                    {formatINR(p.revenue)}
-                  </p>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">
-                    {p.qtySold} sold
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-          {(a?.topProducts || []).length === 0 && (
-            <li className="py-14 text-center text-[10px] font-black text-gray-300 uppercase tracking-[0.25em] italic">
-              No paid sales yet — top products appear after your first sale
-            </li>
-          )}
-        </ul>
-      </div>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-2 text-gray-500 font-bold">
+                <span className="w-2.5 h-2.5 rounded-sm bg-blue-500" />
+                In fulfilment
+              </span>
+              <span className="font-black text-gray-800 tabular-nums">
+                {pending}
+                <span className="text-gray-300 font-bold ml-1">
+                  ({totalOrders ? Math.round((pending / totalOrders) * 100) : 0}%)
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </Panel>
+
+      {/* Top products */}
+      <Panel
+        title="Top Products"
+        subtitle="Ranked by revenue from paid orders"
+      >
+        {topProducts.length === 0 ? (
+          <EmptyState
+            icon="📈"
+            title="No paid sales yet"
+            message="Once customers purchase your products, your best sellers will be ranked here."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[520px]">
+              <thead>
+                <tr className="bg-gray-50/80">
+                  {["Product", "Units Sold", "Revenue"].map((h, i) => (
+                    <th
+                      key={h}
+                      className={`px-4 py-3.5 text-[10px] font-black uppercase tracking-widest text-gray-400 ${
+                        i === 2 ? "text-right" : ""
+                      }`}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {topProducts.map((t) => (
+                  <tr key={t.productId} className="hover:bg-emerald-50/40 transition-colors">
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden shrink-0">
+                          <img
+                            src={
+                              t.imageUrl ? fileUrl(t.imageUrl) : "/placeholder.png"
+                            }
+                            alt=""
+                            className="w-full h-full object-contain p-0.5"
+                          />
+                        </div>
+                        <span className="text-xs font-black text-gray-900 truncate">
+                          {t.productName || `Product #${t.productId}`}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 w-48">
+                      <div className="flex items-center gap-3">
+                        <MiniBar ratio={(t.revenue || 0) / maxRevenue} />
+                        <span className="text-xs font-bold text-gray-500 tabular-nums whitespace-nowrap">
+                          {t.qtySold ?? 0} sold
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5 text-right">
+                      <span className="text-xs font-black text-gray-900 tabular-nums whitespace-nowrap">
+                        {formatINR(t.revenue)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+
+      <p className="mt-5 text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">
+        All figures are store-level metrics from your own catalogue and orders.
+      </p>
     </>
   );
 }
