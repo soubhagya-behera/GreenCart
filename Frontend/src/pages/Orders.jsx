@@ -44,47 +44,54 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
 
   return (
     <div
-      className={`bg-white rounded-[3rem] p-8 md:p-12 shadow-sm border border-gray-100 space-y-10 animate-fade-in group hover:shadow-2xl transition-all duration-500 border-t-[6px] ${
+      className={`bg-white rounded-2xl p-6 md:p-10 shadow-sm border border-gray-100 space-y-8 md:space-y-10 animate-fade-in border-t-4 ${
         o.orderStatus === "Delivered"
           ? "border-t-emerald-500"
           : o.orderStatus === "Cancelled"
-          ? "border-t-red-500"
+          ? "border-t-red-400"
           : "border-t-blue-500"
       }`}
     >
-      <div className="flex flex-col md:flex-row justify-between items-start gap-8 border-b-4 border-gray-900 pb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-6 border-b border-gray-100">
         <div>
-          <span className="text-emerald-600 font-black tracking-[0.2em] text-[10px] uppercase bg-emerald-50 px-3 py-1.5 rounded-full italic mb-4 inline-block">
-            Order Receipt
+          <span className="text-emerald-700 font-bold tracking-widest text-[10px] uppercase bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full mb-3 inline-block">
+            {isCancelled ? "Cancelled" : currentIndex === steps.length - 1 ? "Completed" : "In progress"}
           </span>
           <h2
             onClick={() => navigator.clipboard.writeText(String(o.id))}
-            className="text-2xl font-black cursor-pointer hover:text-emerald-600 transition"
+            title="Click to copy order number"
+            className="text-xl font-extrabold cursor-pointer hover:text-emerald-700 transition-colors"
           >
             #{String(o.id).padStart(8, "0")}
           </h2>
-          <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-2">
-            {new Date(o.createdAt).toLocaleString()}
+          <div className="text-[11px] font-semibold text-gray-400 mt-1.5">
+            {new Date(o.createdAt).toLocaleString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </div>
         </div>
         <div className="text-left md:text-right">
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">
-            Total Valuation
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+            Order total
           </p>
-          <p className="text-3xl font-black text-gray-900 tracking-tighter tabular-nums mb-1">
-            ₹{o.total}
+          <p className="text-2xl font-extrabold text-gray-900 tracking-tight tabular-nums mb-1">
+            ₹{Number(o.total || 0).toLocaleString("en-IN")}
           </p>
-          <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest italic">
-            {o.paymentMethod} • {o.paymentStatus}
+          <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+            {o.paymentMethod} · {o.paymentStatus}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        <div className="lg:col-span-4 space-y-10">
+        <div className="lg:col-span-4 space-y-8">
           <div>
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-6">
-              Live Momentum
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-5">
+              Progress
             </p>
             <div className="relative space-y-8 pl-6">
               <div className="absolute left-[5px] top-2 bottom-2 w-0.5 bg-gray-100 rounded-full"></div>
@@ -141,9 +148,9 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
               })}
               {isCancelled && (
                 <div className="relative flex items-center gap-6 animate-bounce-in">
-                  <div className="absolute -left-[23px] w-3 h-3 rounded-full bg-red-600 ring-4 ring-red-100 z-20"></div>
-                  <span className="text-[10px] font-black uppercase tracking-widest text-red-600 italic">
-                    Terminated
+                  <div className="absolute -left-[23px] w-3 h-3 rounded-full bg-red-500 ring-4 ring-red-100 z-20"></div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-red-500">
+                    Cancelled
                   </span>
                 </div>
               )}
@@ -151,18 +158,18 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
           </div>
 
           <div>
-            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-3 italic">
-              Endpoint
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+              Delivery address
             </p>
-            <p className="text-[11px] font-bold text-gray-600 leading-relaxed italic">
+            <p className="text-[11px] font-semibold text-gray-600 leading-relaxed">
               {o.address}
             </p>
           </div>
         </div>
 
         <div className="lg:col-span-8">
-          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-6">
-            Acquired Selection ({o.items.length} Items)
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-5">
+            Items ({o.items.length})
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {o.items.map((it) => (
@@ -203,9 +210,9 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
           {o.orderStatus !== "Cancelled" && o.orderStatus !== "Delivered" && (
             <button
               onClick={cancelOrder}
-              className="mt-10 bg-red-50 text-red-600 px-5 py-3 rounded-2xl font-black hover:bg-red-600 hover:text-white transition-all duration-300"
+              className="mt-8 bg-red-50 text-red-600 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white transition-colors"
             >
-              Abort This Order Cycle
+              Cancel Order
             </button>
           )}
         </div>
@@ -262,63 +269,98 @@ export default function Orders() {
   return (
     <div className="bg-[#fcfdfd] min-h-screen py-8 md:py-12 px-6">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-7 gap-4 animate-fade-in">
           <div>
-            <span className="text-emerald-600 font-extrabold tracking-[0.2em] text-[10px] uppercase bg-emerald-50 px-3 py-1.5 rounded-full italic">
-              Vault Archives
-            </span>
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 mt-4 tracking-tighter italic">
-              Acquisition History
+            <span className="label-pill">Your Account</span>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mt-3 tracking-tight">
+              My Orders
             </h1>
           </div>
-          <div className="flex items-center gap-3 bg-white px-6 py-3 rounded-[1.5rem] border border-gray-100 shadow-sm">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">
-              Total Logs
+          <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 self-start">
+            <span className="text-[11px] font-bold text-gray-500 tabular-nums">
+              {orders.length} order{orders.length === 1 ? "" : "s"}
             </span>
-            <span className="text-xl font-black text-emerald-600 leading-none">{orders.length}</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-10">
-          <div className="bg-white rounded-3xl p-6 shadow-sm border">
-            <p className="text-xs text-gray-500">Total Orders</p>
-            <h2 className="text-4xl font-black">{orders.length}</h2>
-          </div>
-          <div className="bg-emerald-50 rounded-3xl p-6 border">
-            <p className="text-xs text-emerald-600">Delivered</p>
-            <h2 className="text-4xl font-black text-emerald-600">
-              {orders.filter((o) => o.orderStatus === "Delivered").length}
-            </h2>
-          </div>
-          <div className="bg-blue-50 rounded-3xl p-6 border">
-            <p className="text-xs text-blue-600">Active</p>
-            <h2 className="text-4xl font-black text-blue-600">
-              {orders.filter((o) => o.orderStatus !== "Delivered" && o.orderStatus !== "Cancelled").length}
-            </h2>
-          </div>
-          <div className="bg-red-50 rounded-3xl p-6 border">
-            <p className="text-xs text-red-600">Cancelled</p>
-            <h2 className="text-4xl font-black text-red-600">
-              {orders.filter((o) => o.orderStatus === "Cancelled").length}
-            </h2>
-          </div>
-          <div className="bg-yellow-50 rounded-3xl p-6 border">
-            <p className="text-xs text-yellow-700">Reviews Given</p>
-            <h2 className="text-4xl font-black text-yellow-600">{reviewCount}</h2>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+          {[
+            {
+              label: "All orders",
+              value: orders.length,
+              cls: "text-gray-900",
+            },
+            {
+              label: "Delivered",
+              value: orders.filter((o) => o.orderStatus === "Delivered").length,
+              cls: "text-emerald-600",
+            },
+            {
+              label: "In progress",
+              value: orders.filter(
+                (o) =>
+                  o.orderStatus !== "Delivered" && o.orderStatus !== "Cancelled"
+              ).length,
+              cls: "text-blue-600",
+            },
+            {
+              label: "Cancelled",
+              value: orders.filter((o) => o.orderStatus === "Cancelled").length,
+              cls: "text-red-500",
+            },
+            {
+              label: "Reviews given",
+              value: reviewCount,
+              cls: "text-amber-500",
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="bg-white rounded-xl border border-gray-100 px-4 py-3.5"
+            >
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                {s.label}
+              </p>
+              <p className={`text-xl font-extrabold tabular-nums mt-1.5 ${s.cls}`}>
+                {s.value}
+              </p>
+            </div>
+          ))}
         </div>
 
         {loading ? (
-          <div className="p-20 text-center font-black animate-pulse text-gray-200 uppercase tracking-[0.3em]">
-            Querying Order Registry...
+          <div className="space-y-4">
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 bg-white p-8 space-y-6">
+                <div className="flex justify-between items-start gap-6 pb-5 border-b border-gray-100">
+                  <div className="space-y-2">
+                    <div className="h-3 skeleton rounded-full w-24" />
+                    <div className="h-6 skeleton rounded-lg w-36" />
+                  </div>
+                  <div className="h-7 skeleton rounded-lg w-24" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  <div className="lg:col-span-4 h-36 skeleton rounded-xl" />
+                  <div className="lg:col-span-8 grid grid-cols-2 gap-4">
+                    {[0, 1, 2, 3].map((j) => (
+                      <div key={j} className="h-20 skeleton rounded-xl" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : orders.length === 0 ? (
-          <div className="text-center py-40 bg-white rounded-[3rem] border border-dashed border-gray-200">
-            <h2 className="text-xl font-black text-gray-300 uppercase tracking-widest italic mb-6">
-              Your Archive is Empty
+          <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
+            <div className="text-5xl mb-4">📦</div>
+            <h2 className="text-base font-bold text-gray-900 mb-1.5">
+              No orders yet
             </h2>
-            <a href="/" className="btn-primary italic text-[10px]">
-              Start New Cycle
+            <p className="text-sm text-gray-400 max-w-xs mx-auto mb-6">
+              When you place an order it will show up here with live status updates.
+            </p>
+            <a href="#/all-products" className="btn-primary">
+              Browse Products
             </a>
           </div>
         ) : (

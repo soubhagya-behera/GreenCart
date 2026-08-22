@@ -42,34 +42,45 @@ export default function AllProducts({ onAdd, searchQuery = "" }) {
 
   if (loading) {
     return (
-      <div className="p-20 text-center font-black animate-pulse text-gray-200 uppercase tracking-[0.3em]">
-        Curating Entire Gallery...
-      </div>
+      <section className="bg-white py-6 md:py-10">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="h-9 w-56 skeleton rounded-xl mb-8" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+                <div className="aspect-square skeleton rounded-none" />
+                <div className="p-3.5 space-y-2">
+                  <div className="h-2.5 skeleton rounded-full w-1/2" />
+                  <div className="h-3 skeleton rounded-full w-3/4" />
+                  <div className="h-8 skeleton rounded-lg mt-3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     );
   }
 
   return (
-    <section className="bg-white py-6 md:py-8 lg:py-10">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b-2 border-emerald-600 pb-4 animate-fade-in">
+    <section className="bg-white py-6 md:py-10">
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-7 gap-3 animate-fade-in">
           <div>
-            <span className="text-emerald-600 font-extrabold tracking-[0.2em] text-[10px] uppercase bg-emerald-50 px-3 py-1.5 rounded-full italic">
-              Full Inventory
-            </span>
-
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 mt-4 tracking-tighter italic">
-              Total Collection
+            <span className="label-pill">Shop All</span>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mt-3 tracking-tight">
+              All Products
             </h1>
           </div>
 
-          <div className="flex items-center gap-3 bg-gray-50 px-5 py-2.5 rounded-full border border-gray-100">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">
-              {filtered.length} Rare Items
+          <div className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 self-start">
+            <span className="text-[11px] font-bold text-gray-500 tabular-nums">
+              {filtered.length} product{filtered.length === 1 ? "" : "s"}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-5">
           {filtered.map((p) => (
             <ProductCard
               key={p.id}
@@ -80,14 +91,20 @@ export default function AllProducts({ onAdd, searchQuery = "" }) {
         </div>
 
         {filtered.length === 0 && (
-          <div className="text-center py-40 animate-fade-in">
-            <div className="text-gray-200 text-9xl font-black tracking-tighter italic mb-4">
-              Empty.
+          <div className="text-center py-24 animate-fade-in">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl text-gray-300 mb-4">
+              🧺
             </div>
-
-            <p className="text-gray-400 font-black uppercase tracking-[0.2em] text-xs">
-              No products found.
+            <p className="text-sm font-bold text-gray-700 mb-1">No products found</p>
+            <p className="text-xs text-gray-400 max-w-xs mx-auto">
+              Try a different search term or browse the homepage for fresh picks.
             </p>
+            <a
+              href="#/"
+              className="btn-primary mt-6"
+            >
+              Back to Home
+            </a>
           </div>
         )}
       </div>

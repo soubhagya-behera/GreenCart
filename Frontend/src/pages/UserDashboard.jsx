@@ -53,12 +53,11 @@ export default function UserDashboard() {
               <div className="text-xl font-bold text-gray-800 mb-3">Recent Orders</div>
               <div className="space-y-3">
                 {orders.slice(0, 8).map((o)=>(
-                  <div key={o.id} className="flex items-center justify-between gap-3 text-sm">
-                    <div className="font-medium text-gray-800">#{o.id}</div>
-                    <div className="text-gray-600">{new Date(o.createdAt).toLocaleString()}</div>
-                    <div className="text-gray-800">₹{ o.total}</div>
-                    <div className="text-gray-700">{o.orderStatus}</div>
-                    {o.orderStatus === "Delivered" && o.otpVerified ? <div className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">OTP verified</div> : null}
+                  <div key={o.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-sm">
+                    <div className="font-semibold text-gray-800 tabular-nums">#{String(o.id).padStart(8,"0")}</div>
+                    <div className="text-gray-500 text-xs">{new Date(o.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</div>
+                    <div className="font-bold text-gray-800 tabular-nums">₹{ o.total}</div>
+                    <div className={`text-xs px-2 py-0.5 rounded-full border ${o.orderStatus === "Delivered" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : o.orderStatus === "Cancelled" ? "bg-red-50 text-red-600 border-red-100" : "bg-blue-50 text-blue-600 border-blue-100"}`}>{o.orderStatus}</div>
                   </div>
                 ))}
                 {orders.length === 0 && <div className="text-gray-600 text-sm">No orders yet</div>}

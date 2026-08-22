@@ -20,31 +20,27 @@ export default function Hero() {
 
   return (
     <section className="bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-4 md:py-6">
-        <div className="relative h-[350px] sm:h-[450px] md:h-[600px] w-full overflow-hidden rounded-[2rem] shadow-2xl">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 pt-4 pb-2 md:pt-6">
+        {/* Container keeps the artwork's native aspect ratio (1659×948),
+            so the complete banner is always visible — never cropped,
+            never stretched — at every viewport width. */}
+        <div
+          className="relative w-full overflow-hidden rounded-2xl shadow-md ring-1 ring-gray-100 bg-white"
+          style={{ aspectRatio: "1659 / 948" }}
+        >
           {slides.map((slide, idx) => (
-            <div
+            <img
               key={idx}
-              className={`absolute inset-0 transition-all duration-1000 ease-in-out transform ${
-                idx === current ? "opacity-100 translate-x-0 z-10" : "opacity-0 translate-x-8 pointer-events-none z-0 invisible"
+              src={slide.image}
+              alt=""
+              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                idx === current ? "opacity-100 z-10" : "opacity-0 z-0 invisible"
               }`}
-            >
-              <img
-                src={slide.image}
-                alt=""
-                className="w-full h-full object-cover object-center"
-                onError={(e) => {
-                  e.currentTarget.src = assets.main_banner_bg;
-                }}
-              />
-              
-
-              
-            </div>
+              onError={(e) => {
+                e.currentTarget.src = assets.main_banner_bg;
+              }}
+            />
           ))}
-
-          {/* Indicators */}
-          
         </div>
       </div>
     </section>

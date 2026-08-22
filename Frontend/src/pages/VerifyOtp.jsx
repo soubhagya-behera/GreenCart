@@ -50,34 +50,46 @@ export default function VerifyOtp() {
 
   return (
 
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
 
       <form
         onSubmit={verify}
-        className="bg-white p-10 rounded-2xl shadow-xl"
+        className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8"
       >
 
-        <h1 className="text-2xl font-black mb-6">
-          Verify OTP
+        <span className="label-pill">Almost there</span>
+
+        <h1 className="text-xl font-extrabold text-gray-900 tracking-tight mt-3 mb-1.5">
+          Verify your email
         </h1>
 
+        <p className="text-sm text-gray-400 mb-6 break-words">
+          We sent a code to <span className="font-semibold text-gray-600">{email || "your email"}</span>.
+        </p>
+
+        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+          OTP Code
+        </label>
         <input
-          className="border p-3 rounded-xl w-full mb-4"
-          placeholder="Enter OTP"
+          className="input-field mb-4"
+          placeholder="Enter the 6-digit code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
           value={otp}
           onChange={(e)=>
             setOtp(e.target.value)
           }
+          required
         />
 
         <button
-          className="bg-emerald-600 text-white px-6 py-3 rounded-xl w-full"
+          className="btn-primary w-full"
         >
-          Verify
+          Verify Email
         </button>
 
         {err && (
-          <p className="text-red-500 mt-4">
+          <p className="mt-4 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2.5 break-words">
             {err}
           </p>
         )}

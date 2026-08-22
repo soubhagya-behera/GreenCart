@@ -1,59 +1,22 @@
-import { assets } from "../assets/greencart/greencart_assets/assets";
 import { useEffect, useState, useRef } from "react";
 import { api, fileUrl } from "../lib/api";
 import { subscribeInventory } from "../lib/inventorySocket";
+import ProductCard from "../components/ProductCard";
 
-function RelatedCard({ p, onAdd }) {
-  const price = p.offerPrice ?? p.price;
+function Stars({ rating = 0 }) {
+  const full = Math.round(rating);
   return (
-    <div className="group bg-white rounded-[1.5rem] md:rounded-[2rem] p-3 md:p-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
-      <a
-        href={`#/product/${p.id}`}
-        className="block aspect-square bg-gray-50 rounded-2xl overflow-hidden p-4 mb-4"
-      >
-        <img
-          src={p.imageUrl ? fileUrl(p.imageUrl) : "/placeholder.png"}
-          alt={p.name}
-          className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500"
-        />
-      </a>
-      <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1 italic">
-        {p.category}
-      </div>
-      <a
-        href={`#/product/${p.id}`}
-        className="font-bold text-gray-900 line-clamp-1 mb-2 hover:text-emerald-600 transition-colors"
-      >
-        {p.name}
-      </a>
-      <div className="flex items-center justify-between gap-2 mt-auto">
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-black text-gray-900">₹{price}</span>
-          {p.offerPrice && (
-            <span className="text-[10px] font-bold text-gray-300 line-through">
-              ₹{p.price}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => onAdd(p, 1, true)}
-          className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center hover:bg-emerald-600 transition-all"
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <svg
+          key={i}
+          className={`w-3.5 h-3.5 ${i <= full ? "text-amber-400" : "text-gray-200"}`}
+          fill="currentColor"
+          viewBox="0 0 20 20"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={3}
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-        </button>
-      </div>
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
     </div>
   );
 }
@@ -84,14 +47,11 @@ export default function Product({ id, onAdd }) {
       api(`/reviews/product/${id}`),
     ])
       .then(([res, all, reviewData]) => {
-        console.log("REVIEWS =", reviewData);
-
         setP(res || null);
         setReviews(reviewData || []);
         setList(Array.isArray(all) ? all : all.products || []);
       })
-      .catch((err) => {
-        console.error(err);
+      .catch(() => {
         setP(null);
       })
       .finally(() => setLoading(false));
@@ -115,14 +75,30 @@ export default function Product({ id, onAdd }) {
 
   if (loading)
     return (
-      <div className="p-20 text-center font-black animate-pulse text-gray-200 uppercase tracking-[0.3em]">
-        Decoding Ingredient Metadata...
+      <div className="bg-white min-h-screen py-10">
+        <div className="mx-auto max-w-7xl px-4 md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="aspect-square skeleton rounded-3xl" />
+          <div className="space-y-5 pt-4">
+            <div className="h-5 w-24 skeleton rounded-full" />
+            <div className="h-9 w-3/4 skeleton rounded-xl" />
+            <div className="h-7 w-32 skeleton rounded-xl" />
+            <div className="h-16 skeleton rounded-xl" />
+            <div className="h-12 skeleton rounded-xl mt-8" />
+          </div>
+        </div>
       </div>
     );
   if (!p)
     return (
-      <div className="p-20 text-center font-bold text-gray-400">
-        Essential not found.
+      <div className="bg-white min-h-[60vh] flex flex-col items-center justify-center text-center px-6">
+        <div className="w-14 h-14 mx-auto rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl text-gray-300 mb-4">
+          🔍
+        </div>
+        <p className="text-sm font-bold text-gray-700 mb-1">Product not found</p>
+        <p className="text-xs text-gray-400 mb-6">
+          It may have been removed from the store.
+        </p>
+        <a href="#/" className="btn-primary">Back to Home</a>
       </div>
     );
 
@@ -136,15 +112,23 @@ export default function Product({ id, onAdd }) {
   return (
     <div className="bg-white min-h-screen py-6 md:py-8 lg:py-12">
       <div className="mx-auto max-w-7xl px-4">
-        <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.2em] mb-8 animate-fade-in">
-          <a href="#/" className="text-gray-400 hover:text-emerald-600">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center gap-2 text-[11px] font-semibold mb-8 animate-fade-in"
+        >
+          <a href="#/" className="text-gray-400 hover:text-emerald-700 transition-colors">
             Home
           </a>
-          <span className="text-gray-200">/</span>
-          <span className="text-gray-400">Vault</span>
-          <span className="text-gray-200">/</span>
-          <span className="text-emerald-600 italic">Product Identity</span>
-        </div>
+          <span className="text-gray-300">/</span>
+          <a
+            href={`/category/${encodeURIComponent((p.category || "").toLowerCase())}`}
+            className="text-gray-400 hover:text-emerald-700 transition-colors"
+          >
+            {p.category}
+          </a>
+          <span className="text-gray-300">/</span>
+          <span className="text-gray-700 truncate max-w-[200px]">{p.name}</span>
+        </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16">
           {/* Gallery Section */}
@@ -167,7 +151,7 @@ export default function Product({ id, onAdd }) {
 
             <div className="flex-1 order-1 md:order-2">
               <div
-                className="rounded-[2.5rem] md:rounded-[3rem] border border-gray-100 bg-gray-50/50 flex items-center justify-center relative overflow-hidden group cursor-crosshair min-h-[300px] md:min-h-[500px]"
+                className="rounded-3xl border border-gray-100 bg-gray-50/60 flex items-center justify-center relative overflow-hidden group cursor-crosshair min-h-[280px] md:min-h-[440px]"
                 onMouseMove={handleMouseMove}
                 onMouseLeave={() =>
                   setZoomPos((p) => ({ ...p, active: false }))
@@ -180,13 +164,13 @@ export default function Product({ id, onAdd }) {
                       : "/placeholder.png"
                   }
                   alt={p.name}
-                  className={`max-h-[20rem] md:max-h-[30rem] w-full object-contain mix-blend-multiply transition-transform duration-200 ease-out ${zoomPos.active ? "scale-[2.5]" : "scale-100"}`}
+                  className={`max-h-[20rem] md:max-h-[28rem] w-full object-contain mix-blend-multiply transition-transform duration-200 ease-out ${zoomPos.active ? "scale-[1.8]" : "scale-100"}`}
                   style={{ transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }}
                 />
                 {!zoomPos.active && (
-                  <div className="absolute inset-x-0 bottom-6 md:bottom-8 flex justify-center pointer-events-none animate-bounce">
-                    <span className="text-[7px] md:text-[8px] font-black text-emerald-600 bg-white/80 backdrop-blur-md px-3 py-1.5 rounded-full uppercase tracking-widest shadow-sm">
-                      Explore Details
+                  <div className="absolute inset-x-0 bottom-5 flex justify-center pointer-events-none">
+                    <span className="text-[8px] font-bold text-gray-400 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full uppercase tracking-widest border border-gray-100">
+                      Hover to zoom
                     </span>
                   </div>
                 )}
@@ -196,101 +180,101 @@ export default function Product({ id, onAdd }) {
 
           {/* Context Section */}
           <div className="lg:col-span-6 flex flex-col justify-center animate-fade-in">
-            <div className="inline-flex items-center gap-3 mb-6">
-              <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest italic">
+            <div className="inline-flex items-center gap-3 mb-5">
+              <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
                 {p.category}
               </span>
               {available > 0 ? (
-                <span className="text-emerald-500 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                <span className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-                  Inventory Secured
+                  In stock
                 </span>
               ) : (
-                <span className="text-red-500 text-[9px] font-black uppercase tracking-widest">
-                  Depleted Stock
+                <span className="text-red-500 text-[10px] font-bold uppercase tracking-widest">
+                  Out of stock
                 </span>
               )}
             </div>
 
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-tight mb-4 italic">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
               {p.name}
             </h1>
 
-            <div className="flex items-center gap-5 mb-10">
+            <div className="flex items-center gap-4 mb-8">
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-gray-900 tracking-tighter tabular-nums">
+                <span className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight tabular-nums">
                   ₹{price}
                 </span>
                 {p.offerPrice && (
-                  <span className="text-lg font-bold text-gray-300 line-through tracking-tighter">
+                  <span className="text-base font-semibold text-gray-300 line-through">
                     ₹{p.price}
                   </span>
                 )}
               </div>
-              <div className="h-8 w-px bg-gray-100"></div>
-              <div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4].map((i) => (
-                    <svg
-                      key={i}
-                      className="w-3 h-3 text-amber-400"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() =>
-                    reviewRef.current?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    })
-                  }
-                  className="text-[9px] font-black text-gray-500 uppercase tracking-widest hover:text-emerald-600 cursor-pointer transition-colors"
-                >
-                  ⭐ {p.averageRating?.toFixed(1) || 0}({p.reviewCount || 0}{" "}
-                  Review
-                  {p.reviewCount !== 1 ? "s" : ""})
-                </button>
-              </div>
+              <div className="h-7 w-px bg-gray-100"></div>
+              <button
+                onClick={() =>
+                  reviewRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                className="flex items-center gap-1.5 group cursor-pointer"
+              >
+                <Stars rating={Number(p.averageRating || 0)} />
+                <span className="text-[11px] font-bold text-gray-500 group-hover:text-emerald-700 transition-colors">
+                  {Number(p.averageRating || 0).toFixed(1)} ·{" "}
+                  {p.reviewCount || 0} Review
+                  {(p.reviewCount || 0) === 1 ? "" : "s"}
+                </span>
+              </button>
             </div>
 
-            <div className="flex flex-col gap-1.5 mb-10">
-              <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-xl">
-                {p.description ||
-                  `This premium ${p.weight || ""} ${p.name} is meticulously sourced to meet the highest standards of freshness and nutritional purity. Perfect for your next culinary masterpiece.`}
-              </p>
+            <div className="mb-9">
+              {p.description && (
+                <p className="text-gray-500 font-medium text-sm leading-relaxed max-w-xl">
+                  {p.description}
+                </p>
+              )}
               <div className="flex items-center gap-2 mt-4">
-                <div className="bg-gray-900 text-white px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                  Stock: {available} Units
-                </div>
-                <span className="text-gray-300 text-[10px] font-bold uppercase tracking-widest">
-                  In Warehouse Reserve
+                <span
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
+                    available <= 0
+                      ? "bg-red-50 text-red-500"
+                      : available <= 5
+                      ? "bg-orange-50 text-orange-600"
+                      : "bg-gray-50 text-gray-600"
+                  }`}
+                >
+                  {available <= 0
+                    ? "Out of stock"
+                    : available <= 5
+                    ? `Only ${available} left`
+                    : `${available} in stock`}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100 shadow-sm">
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-3.5">
+                <div className="flex items-center bg-gray-50 rounded-xl p-1 border border-gray-100">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
-                    className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center font-black text-gray-800 hover:text-emerald-600 transition-colors"
+                    aria-label="Decrease quantity"
+                    className="w-11 h-11 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-gray-700 hover:text-emerald-700 transition-colors disabled:opacity-40"
                     disabled={available <= 0}
                   >
-                    -
+                    −
                   </button>
-                  <span className="w-10 text-center font-black text-lg text-gray-900 tabular-nums">
+                  <span className="w-10 text-center font-extrabold text-base text-gray-900 tabular-nums">
                     {qty}
                   </span>
                   <button
                     onClick={() =>
                       setQty((q) => Math.min(available || Infinity, q + 1))
                     }
-                    className="w-10 h-10 rounded-lg bg-white shadow-sm flex items-center justify-center font-black text-gray-800 hover:text-emerald-600 transition-colors"
+                    aria-label="Increase quantity"
+                    className="w-11 h-11 rounded-lg bg-white shadow-sm flex items-center justify-center font-bold text-gray-700 hover:text-emerald-700 transition-colors disabled:opacity-40"
                     disabled={available <= 0}
                   >
                     +
@@ -299,10 +283,10 @@ export default function Product({ id, onAdd }) {
                 <button
                   onClick={() => onAdd(p, qty, false)}
                   disabled={available <= 0}
-                  className={`flex-1 min-w-[180px] h-14 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-2.5 transition-all ${
+                  className={`flex-1 min-w-[180px] h-[52px] rounded-xl font-extrabold text-xs uppercase tracking-[0.15em] inline-flex items-center justify-center gap-2 transition-colors ${
                     available <= 0
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed shadow-none"
-                      : "bg-gray-900 text-white hover:bg-emerald-600 hover:scale-[1.02] active:scale-95 shadow-xl shadow-gray-200"
+                      : "bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm shadow-emerald-100"
                   }`}
                 >
                   <svg
@@ -314,99 +298,125 @@ export default function Product({ id, onAdd }) {
                     <path
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      strokeWidth={3}
-                      d="M12 4v16m8-8H4"
+                      strokeWidth={2.5}
+                      d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                     />
                   </svg>
-                  ADD TO SELECTION
+                  Add to Cart
                 </button>
               </div>
 
               <button
                 onClick={() => onAdd(p, qty, true)}
                 disabled={available <= 0}
-                className={`w-full h-14 rounded-xl font-black text-[11px] uppercase tracking-[0.2em] transition-all border-2 ${
+                className={`w-full h-[52px] rounded-xl font-extrabold text-xs uppercase tracking-[0.15em] transition-colors border ${
                   available <= 0
                     ? "border-gray-100 text-gray-300 pointer-events-none"
-                    : "border-emerald-600 text-emerald-600 hover:bg-emerald-600 hover:text-white"
+                    : "border-emerald-600 text-emerald-700 hover:bg-emerald-50"
                 }`}
               >
-                IMMEDIATE ACQUISITION
+                Buy Now
               </button>
             </div>
 
-            <div className="mt-12 grid grid-cols-2 gap-8 border-t border-gray-50 pt-12">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                  Delivery Cycle
-                </p>
-                <p className="text-gray-900 font-bold text-sm">
-                  Express 90-Min Window
-                </p>
+            <div className="mt-10 grid grid-cols-2 gap-6 border-t border-gray-100 pt-8">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>
+                <div>
+                  <p className="text-gray-900 font-bold text-xs">Home delivery</p>
+                  <p className="text-gray-400 text-[11px] mt-0.5">
+                    Delivered to your address
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">
-                  Preservation
-                </p>
-                <p className="text-gray-900 font-bold text-sm">
-                  Vacuum Sealed Freshness
-                </p>
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <div>
+                  <p className="text-gray-900 font-bold text-xs">Secure checkout</p>
+                  <p className="text-gray-400 text-[11px] mt-0.5">
+                    Cash on delivery or pay online
+                  </p>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <section ref={reviewRef} className="max-w-7xl mx-auto px-6 py-16">
-        <h2 className="text-3xl font-black mb-8">Customer Reviews</h2>
+      <section ref={reviewRef} className="max-w-7xl mx-auto px-4 md:px-6 py-12">
+        <div className="flex items-end justify-between mb-6">
+          <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">
+            Customer Reviews
+          </h2>
+          <span className="text-xs font-semibold text-gray-400 tabular-nums">
+            {reviews.length} review{reviews.length === 1 ? "" : "s"}
+          </span>
+        </div>
 
         {reviews.length === 0 ? (
-          <p className="text-gray-500">No reviews yet</p>
+          <div className="bg-gray-50 border border-gray-100 rounded-2xl p-10 text-center">
+            <p className="text-sm font-bold text-gray-700">No reviews yet</p>
+            <p className="text-xs text-gray-400 mt-1">
+              Be the first to rate this product after it's delivered.
+            </p>
+          </div>
         ) : (
-          reviews.map((r) => (
-            <div key={r.id} className="bg-white border p-5 rounded-xl mb-4">
-              <div className="flex justify-between items-center mb-3">
-                <div>
-                  <p className="font-bold text-gray-900">{r.user?.name}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {reviews.map((r) => (
+              <div
+                key={r.id}
+                className="bg-white border border-gray-100 rounded-2xl p-5 hover:border-emerald-100 transition-colors"
+              >
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-700 text-xs font-extrabold flex items-center justify-center uppercase">
+                      {(r.user?.name || "?").charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm">
+                        {r.user?.name || "Customer"}
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        {new Date(r.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  </div>
 
-                  <p className="text-xs text-gray-400">
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </p>
+                  <Stars rating={Number(r.rating || 0)} />
                 </div>
 
-                <div className="text-yellow-500 font-bold">
-                  {"⭐".repeat(r.rating)}
-                </div>
+                <p className="text-gray-600 text-sm leading-relaxed">{r.comment}</p>
               </div>
-
-              <p className="text-gray-700">{r.comment}</p>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </section>
-      {/* Related Selection */}
-      <section className="bg-gray-50 py-24 pb-40">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
+
+      {/* Related products */}
+      <section className="bg-gray-50 py-12 md:py-16 border-t border-gray-100">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="flex items-end justify-between mb-7 gap-4">
             <div>
-              <span className="text-emerald-600 font-black tracking-[0.2em] text-[10px] uppercase bg-emerald-50 px-3 py-1.5 rounded-full italic">
-                Discovery Hub
-              </span>
-              <h2 className="text-4xl md:text-5xl font-black text-gray-900 mt-4 tracking-tighter italic">
-                Complementary Goods
+              <span className="label-pill">Keep browsing</span>
+              <h2 className="text-xl md:text-2xl font-extrabold text-gray-900 mt-3 tracking-tight">
+                You may also like
               </h2>
             </div>
             <a
-              href="/all-products"
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 hover:text-emerald-600 transition-colors"
+              href="#/all-products"
+              className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 hover:text-emerald-800 transition-colors shrink-0"
             >
-              View Entire Collection
+              View all
             </a>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-5">
             {related.map((rp) => (
-              <RelatedCard key={rp.id} p={rp} onAdd={onAdd} />
+              <ProductCard key={rp.id} p={rp} onAdd={onAdd} />
             ))}
           </div>
         </div>

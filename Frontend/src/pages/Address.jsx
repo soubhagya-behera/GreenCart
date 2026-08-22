@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
-import { assets } from "../assets/greencart/greencart_assets/assets";
 import { api, getToken } from "../lib/api";
 
 export default function Address() {
@@ -72,168 +71,166 @@ export default function Address() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-100 py-6 md:py-12 px-6">
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-gray-50 py-8 md:py-12 px-4 md:px-6">
+      <div className="max-w-lg mx-auto mb-8">
+        <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
               ✓
             </div>
-            <span className="font-semibold">Cart</span>
+            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest">Cart</span>
           </div>
 
-          <div className="w-16 h-1 bg-emerald-500"></div>
+          <div className="w-12 sm:w-16 h-0.5 bg-emerald-500 -mt-5"></div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center">
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold ring-4 ring-emerald-100">
               2
             </div>
-            <span className="font-semibold">Address</span>
+            <span className="text-[10px] font-bold text-gray-900 uppercase tracking-widest">Address</span>
           </div>
 
-          <div className="w-16 h-1 bg-gray-300"></div>
+          <div className="w-12 sm:w-16 h-0.5 bg-gray-200 -mt-5"></div>
 
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold">
               3
             </div>
-            <span className="text-gray-400">Payment</span>
+            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Payment</span>
           </div>
         </div>
       </div>
-      <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-2 gap-10 items-center bg-white/90 backdrop-blur-md rounded-[2rem] p-6 md:p-10 shadow-2xl border border-gray-100 animate-fade-in">
-        <div className="space-y-6">
-          <div>
-            <span className="text-emerald-600 font-black tracking-[0.2em] text-[8px] uppercase bg-emerald-50 px-2.5 py-1 rounded-full italic">
-              Logistics Hub
-            </span>
-            <h1 className="text-2xl md:text-3xl font-black text-gray-900 mt-3 tracking-tighter italic leading-tight">
-              Delivery <br />
-              <span className="text-emerald-500">Address</span>
-            </h1>
-            <p className="text-gray-400 font-medium text-[10px] mt-1.5">
-              Enter your address to receive fresh groceries quickly.
-            </p>
-          </div>
 
-          <form onSubmit={save} className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
+      <div className="mx-auto max-w-2xl bg-white rounded-2xl p-6 md:p-10 shadow-sm border border-gray-100 animate-fade-in">
+        <div className="mb-7">
+          <span className="label-pill">Checkout</span>
+          <h1 className="text-2xl font-extrabold text-gray-900 mt-3 tracking-tight">
+            Delivery Address
+          </h1>
+          <p className="text-gray-400 text-sm mt-1.5">
+            Enter your address to receive fresh groceries quickly.
+          </p>
+        </div>
+
+        <form onSubmit={save} className="grid gap-3.5">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="firstName" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">First Name</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="👤 First Name"
+                id="firstName"
+                className="input-field"
+                placeholder="e.g. Rahul"
                 value={form.firstName}
                 onChange={(e) => upd("firstName", e.target.value)}
                 required
               />
+            </div>
+            <div>
+              <label htmlFor="lastName" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Last Name</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="👤 Last Name"
+                id="lastName"
+                className="input-field"
+                placeholder="e.g. Kumar"
                 value={form.lastName}
                 onChange={(e) => upd("lastName", e.target.value)}
                 required
               />
             </div>
+          </div>
+          <div>
+            <label htmlFor="email" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Email Address</label>
             <input
-              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-              placeholder="📧 Email Address"
+              id="email"
+              className="input-field"
+              placeholder="you@example.com"
               type="email"
               value={form.email}
               onChange={(e) => upd("email", e.target.value)}
               required
             />
+          </div>
+          <div>
+            <label htmlFor="street" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Street Address</label>
             <input
-              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-              placeholder="🏠 Street Address"
+              id="street"
+              className="input-field"
+              placeholder="House no, street, area"
               value={form.street}
               onChange={(e) => upd("street", e.target.value)}
               required
             />
-            <div className="grid grid-cols-2 gap-3">
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="city" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">City</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="📍 City"
+                id="city"
+                className="input-field"
+                placeholder="City"
                 value={form.city}
                 onChange={(e) => upd("city", e.target.value)}
                 required
               />
+            </div>
+            <div>
+              <label htmlFor="state" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">State</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="🗺️ State"
+                id="state"
+                className="input-field"
+                placeholder="State"
                 value={form.state}
                 onChange={(e) => upd("state", e.target.value)}
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="zipcode" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">ZIP Code</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="📮 ZIP Code"
+                id="zipcode"
+                className="input-field"
+                placeholder="PIN code"
                 value={form.zipcode}
                 onChange={(e) => upd("zipcode", e.target.value)}
                 required
               />
+            </div>
+            <div>
+              <label htmlFor="country" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Country</label>
               <input
-                className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-                placeholder="🌎 Country"
+                id="country"
+                className="input-field"
+                placeholder="Country"
                 value={form.country}
                 onChange={(e) => upd("country", e.target.value)}
                 required
               />
             </div>
+          </div>
+          <div>
+            <label htmlFor="phone" className="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5">Phone Number</label>
             <input
-              className="input-field py-3 px-4 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all shadow-sm"
-              placeholder="📞 Phone Number"
+              id="phone"
+              className="input-field"
+              placeholder="Contact number for delivery updates"
               value={form.phone}
               onChange={(e) => upd("phone", e.target.value)}
               required
             />
-
-            <button
-              disabled={saving}
-              className="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white font-bold py-4 rounded-xl hover:scale-[1.02] transition-all shadow-lg mt-4 disabled:opacity-60"
-            >
-              {saving ? "Saving..." : "SAVE ADDRESS & CONTINUE →"}
-            </button>
-          </form>
-        </div>
-
-        <div className="hidden lg:flex flex-col gap-4">
-          <div className="bg-white rounded-3xl p-5 shadow-lg border border-emerald-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
-              Delivery Benefits
-            </h3>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🚚</span>
-                <span className="font-medium">Free Delivery Available</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-lg">⚡</span>
-                <span className="font-medium">Fast Delivery</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🛡️</span>
-                <span className="font-medium">Secure Checkout</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="text-lg">🥬</span>
-                <span className="font-medium">Fresh Farm Products</span>
-              </div>
-            </div>
           </div>
 
-          <div className="bg-white rounded-3xl p-3 shadow-lg border border-emerald-100">
-            <img
-              src={assets.add_address_iamge}
-              alt=""
-              className="w-[60%] mx-auto"
-            />
-          </div>
-        </div>
+          <button
+            disabled={saving}
+            className="btn-primary w-full !py-3.5 !text-sm mt-3 disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save Address & Continue →"}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-[11px] font-semibold text-gray-300 uppercase tracking-widest">
+          🔒 Saved securely to your GreenCart account
+        </p>
       </div>
     </div>
   );

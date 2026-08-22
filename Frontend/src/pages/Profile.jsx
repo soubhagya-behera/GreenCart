@@ -86,31 +86,27 @@ export default function Profile({ user, setUser }) {
 
   return (
     <section className="bg-gray-50 min-h-screen">
-      <div className="mx-auto max-w-6xl px-6 py-12 animate-fade-in">
-        <h1 className="text-3xl font-extrabold text-gray-800 mb-6">
-          Your Profile
+      <div className="mx-auto max-w-4xl px-4 md:px-6 py-10 animate-fade-in">
+        <span className="label-pill">Your Account</span>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mt-3 mb-6 tracking-tight">
+          Profile
         </h1>
 
-        <div className="rounded-3xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-green-400 p-5 text-white shadow-[0_20px_60px_rgba(16,185,129,0.35)] mb-8 relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
-
-          <div className="flex items-center gap-4 relative z-10">
+        <div className="rounded-2xl bg-emerald-600 p-6 text-white shadow-sm mb-8 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10 text-center sm:text-left">
             <img
               src={user?.avatarUrl ? fileUrl(user.avatarUrl) : assets.profile_icon}
               alt=""
-              className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-xl transition-all duration-500 hover:scale-110 hover:rotate-3"
+              className="w-20 h-20 rounded-full object-cover border-4 border-white/30 shadow-lg"
             />
 
-            <div>
-              <p className="uppercase tracking-widest text-sm opacity-80">
-                Profile Center
-              </p>
-
-              <h1 className="text-3xl font-black mt-1">{user?.name}</h1>
-
-              <p className="mt-2 text-white/80">{user?.email}</p>
-              <div className="flex gap-3 mt-4">
-                <label className="inline-flex px-5 py-2 rounded-full bg-white text-emerald-600 font-bold cursor-pointer hover:scale-105 transition shadow-lg">
+            <div className="min-w-0">
+              <h2 className="text-xl font-extrabold tracking-tight truncate">
+                {user?.name}
+              </h2>
+              <p className="mt-1 text-white/80 text-sm truncate">{user?.email}</p>
+              <div className="flex flex-wrap justify-center sm:justify-start gap-2.5 mt-4">
+                <label className="inline-flex px-4 py-2 rounded-lg bg-white text-emerald-700 font-bold text-xs cursor-pointer hover:bg-emerald-50 transition-colors shadow-sm">
                   Change Avatar
                   <input
                     type="file"
@@ -120,12 +116,18 @@ export default function Profile({ user, setUser }) {
                   />
                 </label>
 
+                {user?.verified && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-700/50 text-[11px] font-bold uppercase tracking-wider">
+                    ✓ Verified
+                  </span>
+                )}
+
                 <button
                   onClick={() => {
                     localStorage.removeItem("token");
                     window.location.href = "/auth";
                   }}
-                  className="px-5 py-2 rounded-full bg-red-500 text-white font-bold hover:bg-red-600 transition"
+                  className="px-4 py-2 rounded-lg bg-red-500/90 text-white font-bold text-xs hover:bg-red-600 transition-colors"
                 >
                   Logout
                 </button>
@@ -133,75 +135,86 @@ export default function Profile({ user, setUser }) {
             </div>
           </div>
         </div>
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white">
-            <p className="text-gray-400 uppercase text-xs">Account Type</p>
 
-            <h2 className="text-4xl font-black mt-2">{user?.role}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-3.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Account type</p>
+            <p className="text-base font-extrabold text-gray-900 mt-1.5 capitalize">{user?.role || "—"}</p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white">
-            <p className="text-gray-400 uppercase text-xs">Status</p>
-
-            <h2 className="text-3xl font-black text-emerald-600 mt-2">Active</h2>
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-3.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Email</p>
+            <p className="text-sm font-bold text-gray-900 mt-1.5 truncate">{user?.email || "—"}</p>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 shadow-xl border border-white">
-            <p className="text-gray-400 uppercase text-xs">Profile Completion</p>
-
-            <h2 className="text-3xl font-black mt-2">100%</h2>
+          <div className="bg-white rounded-xl border border-gray-100 px-4 py-3.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Verification</p>
+            <p className={`text-base font-extrabold mt-1 ${user?.verified ? "text-emerald-600" : "text-amber-500"}`}>
+              {user?.verified ? "Verified ✓" : "Pending"}
+            </p>
           </div>
         </div>
+
         <form
           onSubmit={saveProfile}
-          className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100 space-y-6"
+          className="bg-white rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 space-y-5"
         >
           <div>
-            <h2 className="text-2xl font-black text-gray-900">Profile Settings</h2>
+            <h2 className="text-lg font-extrabold text-gray-900">Account Settings</h2>
 
-            <p className="text-gray-500 mt-1">
-              Update your personal information and password.
+            <p className="text-gray-500 text-sm mt-1">
+              Update your name and password.
             </p>
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Full Name</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
+              Full Name
+            </label>
             <input
-              className="w-full rounded-2xl border border-gray-200 px-5 py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
                 Current Password
               </label>
               <input
-                className="w-full rounded-2xl border border-gray-200 px-5 py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
                 type="password"
+                placeholder="Required to change password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
+                autoComplete="current-password"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-1.5">
                 New Password
               </label>
               <input
-                className="w-full rounded-2xl border border-gray-200 px-5 py-4 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 outline-none transition-all"
                 type="password"
+                placeholder="Leave blank to keep current"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
               />
             </div>
           </div>
+          {err && (
+            <div className="text-sm font-semibold text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+              {err}
+            </div>
+          )}
           <button
             disabled={saving}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 text-white font-black tracking-widest uppercase shadow-xl hover:scale-[1.02] active:scale-95 hover:shadow-[0_20px_60px_rgba(16,185,129,0.35)] transition-all duration-300"
+            className="btn-primary w-full !py-3 disabled:opacity-60"
           >
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? "Saving…" : "Save Changes"}
           </button>
-          {err && <div className="text-sm text-red-600">{err}</div>}
         </form>
       </div>
     </section>

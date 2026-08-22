@@ -83,13 +83,16 @@ export default function App() {
   }, [search]);
   useEffect(() => {
     api("/products").then((res) => {
-  const arr = Array.isArray(res) ? res : (res.products || []);
-  const set = new Set(arr.map((p) => p.id));
-  setValidIds(set);
-    }).catch(() => setValidIds(new Set()));
+      const arr = Array.isArray(res) ? res : (res.products || []);
+      // String ids so they match the object keys produced by Object.entries(cart).
+      const set = new Set(arr.map((p) => String(p.id)));
+      setValidIds(set);
+    });
+    // On failure leave validIds null = "unknown", so the badge count is
+    // never wiped by an empty allow-list.
   }, []);
   const count = Object.entries(cart).reduce((sum, [id, qty]) => {
-    if (validIds && !validIds.has(id)) return sum;
+    if (validIds !== null && !validIds.has(String(id))) return sum;
     return sum + qty;
   }, 0);
   function logout() {
@@ -340,14 +343,16 @@ const refreshCart = () => {
   }
   return (
     <>
-      <Header cartCount={count} searchQuery={search} setSearch={setSearch} user={user} onLogout={logout} />
+      <Header cartCount={count} searchQuery={search} setSearch={setSearch} user={user} onLogout={logout} route={route} />
       {body}
       {toast.show && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in">
-          <div className="bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-emerald-500">
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4 4a1 1 0 01-1.414 0l-2-2a1 1 0 111.414-1.414L9 10.586l3.293-3.293a1 1 0 011.414 1.414z" /></svg>
-            <span className="font-semibold">{toast.msg}</span>
-            <button onClick={() => navigate("/cart")} className="ml-2 bg-emerald-700 hover:bg-emerald-800 text-xs px-2 py-1 rounded-lg transition-colors">View Cart</button>
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in w-max max-w-[92vw]">
+          <div className="bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3">
+            <svg className="w-5 h-5 fill-current shrink-0" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293l-4 4a1 1 0 01-1.414 0l-2-2a1 1 0 111.414-1.414L9 10.586l3.293-3.293a1 1 0 011.414 1.414z" /></svg>
+            <span className="font-bold text-sm break-words">{toast.msg}</span>
+            {user?.role !== "admin" && (
+              <button onClick={() => navigate("/cart")} className="ml-1 bg-emerald-700 hover:bg-emerald-800 text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors shrink-0">View Cart</button>
+            )}
           </div>
         </div>
       )}
