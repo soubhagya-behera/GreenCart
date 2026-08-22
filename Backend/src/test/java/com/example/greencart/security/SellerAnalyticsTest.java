@@ -144,4 +144,48 @@ class SellerAnalyticsTest {
         assertEquals(1, b.getTopProducts().size());
         assertEquals(22L, b.getTopProducts().get(0).getProductId());
     }
+
+    // D. After the demo automation flips a COD order to Delivered + Paid,
+    // the seller's own line items count toward revenue with no change to
+    // the analytics implementation itself.
+    @Test
+    void deliveredAndPaidCodOrderCountsTowardSellerRevenue() {
+
+        Product riceA = productOf(sellerA, 12L, "Brown Rice", true);
+
+        Order demoDeliveredCod = order("Delivered", "Paid",
+                item(riceA, 1, 120.0));
+
+        when(orderRepo.findAll()).thenReturn(List.of(demoDeliveredCod));
+        when(productRepo.findBySeller(sellerA)).thenReturn(List.of(riceA));
+
+        SellerAnalyticsDTO a = controller.analytics(requestFor(sellerA));
+
+        assertEquals(120.0, a.getTotalRevenue());
+        assertEquals(1L, a.getTotalOrders());
+        assertEquals(0L, a.getPendingOrders());
+        assertEquals(1L, a.getCompletedOrders());
+        assertEquals(1, a.getTopProducts().size());
+        assertEquals("Brown Rice", a.getTopProducts().get(0).getName());
+        assertEquals(120.0, a.getTopProducts().get(0).getRevenue());
+    }
+
+    // The mirror case: Delivered but still Pending contributes nothing,
+    // keeping the PAID-order revenue definition intact.
+    @Test
+    void deliveredButUnpaidCodOrderIsStillExcludedFromRevenue() {
+
+        Product riceA = productOf(sellerA, 12L, "Brown Rice", true);
+
+        Order deliveredPendingCod = order("Delivered", "Pending",
+                item(riceA, 1, 120.0));
+
+        when(orderRepo.findAll()).thenReturn(List.of(deliveredPendingCod));
+        when(productRepo.findBySeller(sellerA)).thenReturn(List.of(riceA));
+
+        SellerAnalyticsDTO a = controller.analytics(requestFor(sellerA));
+
+        assertEquals(0.0, a.getTotalRevenue());
+        assertEquals(1L, a.getTotalOrders());
+    }
 }

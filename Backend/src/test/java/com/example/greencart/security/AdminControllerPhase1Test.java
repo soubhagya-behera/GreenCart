@@ -125,6 +125,36 @@ class AdminControllerPhase1Test {
         assertEquals(375.0, dto.getTotalRevenue());
     }
 
+    // E. Platform revenue must obey the same PAID rule the seller portal
+    // uses: once the demo automation flips a COD order to Paid on delivery,
+    // admin Total Revenue includes exactly the same amount.
+    @Test
+    void adminAnalyticsMatchesSellerViewOnDemoDeliveredCodOrders() {
+
+        when(userRepo.count()).thenReturn(2L);
+        when(productRepo.count()).thenReturn(5L);
+        when(orderRepo.count()).thenReturn(2L);
+
+        Order deliveredCodPaid = new Order();
+        deliveredCodPaid.setOrderStatus("Delivered");
+        deliveredCodPaid.setPaymentStatus("Paid");
+        deliveredCodPaid.setTotal(120.0);
+
+        Order deliveredStillPending = new Order();
+        deliveredStillPending.setOrderStatus("Delivered");
+        deliveredStillPending.setPaymentStatus("Pending");
+        deliveredStillPending.setTotal(80.0);
+
+        when(orderRepo.findAll()).thenReturn(
+                List.of(deliveredCodPaid, deliveredStillPending));
+
+        AnalyticsDTO dto = controller.analytics(requestFor(admin));
+
+        // Only the collected (Paid) ₹120 counts — identical to the seller's
+        // own line-item view of the same order.
+        assertEquals(120.0, dto.getTotalRevenue());
+    }
+
     @Test
     void adminUsersResponseContainsNoPasswordOrHash() throws Exception {
 
