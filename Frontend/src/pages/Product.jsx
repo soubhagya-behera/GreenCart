@@ -169,7 +169,7 @@ export default function Product({ id, onAdd }) {
                 />
                 {!zoomPos.active && (
                   <div className="absolute inset-x-0 bottom-5 flex justify-center pointer-events-none">
-                    <span className="text-[8px] font-bold text-gray-400 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full uppercase tracking-widest border border-gray-100">
+                    <span className="hidden md:inline-block text-[9px] font-bold text-gray-400 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full uppercase tracking-widest border border-gray-100">
                       Hover to zoom
                     </span>
                   </div>

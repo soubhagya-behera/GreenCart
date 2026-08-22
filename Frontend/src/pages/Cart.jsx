@@ -498,12 +498,12 @@ export default function Cart({
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">
                   Payment method
                 </span>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2 items-stretch">
                   {["Cash On Delivery", "Digital Payment"].map((m) => (
                     <button
                       key={m}
                       onClick={() => setMethod(m)}
-                      className={`py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                      className={`px-2 py-3 rounded-lg text-[10px] font-bold uppercase tracking-wide leading-tight transition-colors ${
                         method === m
                           ? "bg-emerald-600 text-white shadow-sm"
                           : "bg-gray-50 text-gray-500 border border-gray-100 hover:border-emerald-300 hover:text-emerald-700"

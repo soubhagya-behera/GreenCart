@@ -260,11 +260,11 @@ const refreshCart = () => {
   if (route === "/cart") {
     body = <Cart cart={cart} onInc={inc} onDec={dec} onRemove={remove} onClearCart={clearCart} />;
   }
-  if (route === "/auth") {
+  if (route === "/auth" || route === "/login" || route === "/register") {
   if (user) {
     navigate(homeFor(user.role));
   } else {
-    body = <Auth />;
+    body = <Auth key={route} initialMode={route === "/register" ? "register" : "login"} />;
   }
 }
   if (route === "/forgot") {

@@ -135,10 +135,10 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
                         }`}
                       >
                         <span>{stepIcons[s]}</span>
-                        <span>{s}</span>
+                        <span>{s === "OutForDelivery" ? "Out for Delivery" : s}</span>
                       </span>
                       {isCurrent && !isCancelled && (
-                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest italic mt-0.5">
+                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest italic mt-0.5">
                           Current Phase
                         </span>
                       )}
@@ -185,8 +185,8 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
                   />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-gray-800 line-clamp-1">{it.name}</p>
-                  <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest mt-1 italic">
+                  <p className="text-xs font-black text-gray-800 line-clamp-1">{it.name}</p>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1 italic">
                     {it.qty} × ₹{it.price}
                   </p>
                   {o.orderStatus === "Delivered" &&
@@ -267,7 +267,7 @@ export default function Orders() {
   }, []);
 
   return (
-    <div className="bg-[#fcfdfd] min-h-screen py-8 md:py-12 px-6">
+    <div className="bg-[#fcfdfd] min-h-screen py-8 md:py-12 px-4 sm:px-6">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-7 gap-4 animate-fade-in">
           <div>

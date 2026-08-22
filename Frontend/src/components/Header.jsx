@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import { api, fileUrl } from "../lib/api";
 import { navigate } from "../lib/router";
@@ -25,11 +26,41 @@ export default function Header({ cartCount = 0, searchQuery = "", setSearch, use
   })();
 
   // Lock background scrolling while the mobile drawer is open.
+  // Restores the previous value on close AND on unmount so the
+  // body can never stay permanently locked.
   useEffect(() => {
-    document.body.style.overflow = open ? "hidden" : "";
+    if (!open) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = prevOverflow;
     };
+  }, [open]);
+
+  // Auto-close the drawer if the viewport grows into desktop sizes,
+  // otherwise a hidden (lg:hidden) open drawer would keep the body locked.
+  useEffect(() => {
+    if (!open) return undefined;
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => { if (mq.matches) setOpen(false); };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [open]);
+
+  // Close overlays whenever the route changes.
+  useEffect(() => {
+    setOpen(false);
+    setMobileSearch(false);
+  }, [route]);
+
+  // Close the drawer on Escape for keyboard users.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   useEffect(() => {
@@ -200,12 +231,17 @@ hover:border-emerald-300 hover:text-emerald-700 transition-colors"
             )}
 
             <button
-              className="lg:hidden p-2 rounded-xl bg-gray-900 text-white"
-              onClick={() => setOpen(!open)}
-              aria-label="Open menu"
+              className={`lg:hidden shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gray-50 text-gray-900 border border-gray-100 transition-all ${
+                open
+                  ? "opacity-0 pointer-events-none"
+                  : "opacity-100 hover:border-emerald-300 hover:text-emerald-700 active:scale-95"
+              }`}
+              onClick={() => setOpen(true)}
+              aria-label="Open navigation"
               aria-expanded={open}
+              aria-controls="customer-mobile-drawer"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+              <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16m-7 6h7" /></svg>
             </button>
           </div>
         </div>
@@ -230,143 +266,171 @@ hover:border-emerald-300 hover:text-emerald-700 transition-colors"
         </div>
       )}
 
-      {/* Mobile Menu Drawer — full-height app-style panel */}
-      <div
-        className={`mobile-drawer fixed inset-y-0 right-0 w-72 max-w-[85%] bg-gray-950 text-white shadow-2xl z-[200] transform transition-transform duration-300 lg:hidden ${
-          open ? "translate-x-0" : "translate-x-full pointer-events-none"
-        }`}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Customer menu"
-      >
-        <div className="h-full flex flex-col">
-          {/* Branding header */}
-          <div className="flex items-center justify-between px-5 h-16 border-b border-white/10 shrink-0">
-            <img src={assets.logo} alt="GreenCart" className="h-6 brightness-0 invert" />
-            <button
-              onClick={() => setOpen(false)}
-              aria-label="Close menu"
-              className="p-2 rounded-xl bg-white/5 hover:bg-red-500/20 hover:text-red-300 text-gray-300 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
+      {/* Mobile Menu Drawer — portaled to <body>.
+          The header uses backdrop-blur, which creates a containing block for
+          position:fixed descendants; rendering here would trap and clip the
+          drawer to the header box. A portal anchors it to the real viewport. */}
+      {createPortal(
+        <div className="lg:hidden" aria-hidden={!open}>
+          {/* Soft premium backdrop — de-emphasizes the page without going modal-dark */}
+          <div
+            onClick={() => setOpen(false)}
+            className={`fixed inset-0 z-[9998] bg-slate-900/40 backdrop-blur-[2px] transition-opacity duration-300 ease-out ${
+              open ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
+          />
 
-          {/* Sections */}
-          <nav aria-label="Mobile navigation" className="flex-1 overflow-y-auto px-3 py-5 space-y-6">
-            <div>
-              <div className="px-4 mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-gray-600">Main</div>
-              <div className="space-y-1">
-                {[
-                  {
-                    name: "Home",
-                    path: "/",
-                    icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
-                  },
-                  {
-                    name: "All Products",
-                    path: "/all-products",
-                    icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
-                  },
-                  ...(user && user.role !== "admin"
-                    ? [{
-                        name: "Orders",
-                        path: "/orders",
-                        icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
-                      }]
-                    : []),
-                  {
-                    name: "Recipes",
-                    path: "/recipes",
-                    icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
-                  },
-                ].map((item) => {
-                  const isActive = activeNav === item.path;
-                  return (
-                    <a
-                      key={item.path}
-                      href={item.path}
-                      aria-current={isActive ? "page" : undefined}
-                      onClick={(e) => { e.preventDefault(); navigate(item.path); setOpen(false); }}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                        isActive
-                          ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-                          : "text-gray-400 hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      <span className="shrink-0">{item.icon}</span>
-                      {item.name}
-                    </a>
-                  );
-                })}
-              </div>
+          {/* Right-side navigation drawer */}
+          <aside
+            id="customer-mobile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Customer menu"
+            className={`mobile-drawer fixed inset-y-0 right-0 z-[9999] flex w-[86%] max-w-[360px] flex-col overflow-hidden rounded-l-[1.75rem] bg-white shadow-[-24px_0_60px_-24px_rgba(15,23,42,0.35)] transition-[transform,visibility] duration-300 ease-out will-change-transform ${
+              open ? "translate-x-0 visible" : "translate-x-full invisible"
+            }`}
+            style={{ height: "100dvh", maxHeight: "100dvh" }}
+          >
+            {/* Compact fixed header — brand + close ONLY */}
+            <div className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 pl-5 pr-3">
+              <img src={assets.logo} alt="GreenCart" className="h-6" />
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors active:scale-95"
+              >
+                <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             </div>
 
-            {user && user.role !== "admin" && (
+            {/* Scrollable navigation — navigation ONLY, never page content */}
+            <nav aria-label="Mobile navigation" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4">
               <div>
-                <div className="px-4 mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-gray-600">Account</div>
+                <div className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-[0.28em] text-gray-400">Shop</div>
                 <div className="space-y-1">
-                  <a
-                    href="/profile"
-                    aria-current={activeNav === "/profile" ? "page" : undefined}
-                    onClick={(e) => { e.preventDefault(); navigate("/profile"); setOpen(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      activeNav === "/profile"
-                        ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="shrink-0"><svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
-                    My Account
-                  </a>
-                  <a
-                    href="/cart"
-                    aria-current={activeNav === "/cart" ? "page" : undefined}
-                    onClick={(e) => { e.preventDefault(); navigate("/cart"); setOpen(false); }}
-                    className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                      activeNav === "/cart"
-                        ? "bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <span className="shrink-0"><svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg></span>
-                      Cart
-                    </span>
-                    {cartCount > 0 && (
-                      <span className="min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-emerald-500 text-gray-950 text-[10px] font-extrabold tabular-nums">
-                        {cartCount}
-                      </span>
-                    )}
-                  </a>
+                  {[
+                    {
+                      name: "Home",
+                      path: "/",
+                      icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
+                    },
+                    {
+                      name: "All Products",
+                      path: "/all-products",
+                      icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>,
+                    },
+                    ...(user && user.role !== "admin"
+                      ? [{
+                          name: "My Orders",
+                          path: "/orders",
+                          icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
+                        }]
+                      : []),
+                    {
+                      name: "Recipes",
+                      path: "/recipes",
+                      icon: <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+                    },
+                  ].map((item) => {
+                    const isActive = activeNav === item.path;
+                    return (
+                      <a
+                        key={item.path}
+                        href={item.path}
+                        aria-current={isActive ? "page" : undefined}
+                        onClick={(e) => { e.preventDefault(); navigate(item.path); setOpen(false); }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-colors ${
+                          isActive
+                            ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-emerald-700"
+                        }`}
+                      >
+                        <span className={`shrink-0 ${isActive ? "text-emerald-600" : "text-gray-400"}`}>{item.icon}</span>
+                        {item.name}
+                        {isActive && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                        )}
+                      </a>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </nav>
 
-          {/* Footer */}
-          <div className="px-4 py-4 border-t border-white/10 shrink-0">
-            {user ? (
-              <button
-                onClick={() => { setOpen(false); onLogout && onLogout(); }}
-                className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-red-500/20 hover:text-red-300 text-gray-300 rounded-xl py-3 text-[10px] font-black uppercase tracking-widest transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                Sign Out
-              </button>
-            ) : (
-              <a
-                href="/auth"
-                onClick={(e) => { e.preventDefault(); navigate("/auth"); setOpen(false); }}
-                className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl py-3 text-[10px] font-black uppercase tracking-widest transition-colors"
-              >
-                Sign In / Get Started
-              </a>
+              {user && user.role !== "admin" && (
+                <div>
+                  <div className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-[0.28em] text-gray-400">Account</div>
+                  <div className="space-y-1">
+                    <a
+                      href="/profile"
+                      aria-current={activeNav === "/profile" ? "page" : undefined}
+                      onClick={(e) => { e.preventDefault(); navigate("/profile"); setOpen(false); }}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-colors ${
+                        activeNav === "/profile"
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-emerald-700"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${activeNav === "/profile" ? "text-emerald-600" : "text-gray-400"}`}><svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
+                      My Account
+                      {activeNav === "/profile" && (
+                        <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                      )}
+                    </a>
+                    <a
+                      href="/cart"
+                      aria-current={activeNav === "/cart" ? "page" : undefined}
+                      onClick={(e) => { e.preventDefault(); navigate("/cart"); setOpen(false); }}
+                      className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-colors ${
+                        activeNav === "/cart"
+                          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-emerald-700"
+                      }`}
+                    >
+                      <span className="flex items-center gap-3">
+                        <span className={`shrink-0 ${activeNav === "/cart" ? "text-emerald-600" : "text-gray-400"}`}><svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg></span>
+                        Cart
+                      </span>
+                      {cartCount > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-extrabold tabular-nums">
+                          {cartCount}
+                        </span>
+                      )}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {!user && (
+                <div>
+                  <div className="mb-1.5 px-4 text-[9px] font-black uppercase tracking-[0.28em] text-gray-400">Account</div>
+                  <a
+                    href="/auth"
+                    onClick={(e) => { e.preventDefault(); navigate("/auth"); setOpen(false); }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold uppercase tracking-widest bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-colors"
+                  >
+                    <span className="shrink-0"><svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg></span>
+                    Sign In / Get Started
+                  </a>
+                </div>
+              )}
+            </nav>
+
+            {/* Auth footer — pinned under the scrollable area */}
+            {user && (
+              <div className="shrink-0 border-t border-gray-100 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <button
+                  onClick={() => { setOpen(false); onLogout && onLogout(); }}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 py-3 text-[11px] font-black uppercase tracking-widest text-red-500 transition-colors hover:bg-red-100"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                  Sign Out
+                </button>
+              </div>
             )}
-          </div>
-        </div>
-      </div>
-      {open && <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-[190] animate-fade-in lg:hidden" onClick={() => setOpen(false)}></div>}
+          </aside>
+        </div>,
+        document.body
+      )}
     </header>
   );
 }

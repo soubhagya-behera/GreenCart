@@ -97,7 +97,7 @@ export default function ProductCard({ p, onAdd }) {
         </a>
 
         <div className="mt-auto">
-          <div className="flex items-baseline gap-1.5 mb-2.5">
+          <div className="flex items-baseline flex-wrap gap-x-1.5 gap-y-1 mb-2.5">
             <span className="text-base font-extrabold text-gray-900 tracking-tight tabular-nums">
               ₹{price}
             </span>
@@ -107,7 +107,7 @@ export default function ProductCard({ p, onAdd }) {
               </span>
             )}
             {available > 0 && available <= 5 && (
-              <span className="ml-auto text-[8px] font-extrabold text-orange-500 uppercase tracking-widest">
+              <span className="ml-auto text-[9px] font-extrabold text-orange-500 uppercase tracking-wide whitespace-nowrap">
                 Only {available} left
               </span>
             )}
