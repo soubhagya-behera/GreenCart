@@ -106,7 +106,11 @@ export default function Product({ id, onAdd }) {
   const related = list
     .filter((x) => x.category === p.category && x.id !== p.id)
     .slice(0, 5);
-  const available = p.stock ?? 0;
+  // Removed by its seller (active === false) → unpurchasable, whatever the
+  // stored stock says. Details page stays reachable so reviews, metadata and
+  // historical order references keep working.
+  const removed = p.active === false;
+  const available = removed ? 0 : (p.stock ?? 0);
   const productImgs = p.imageUrl ? [p.imageUrl] : [];
 
   return (
@@ -184,7 +188,11 @@ export default function Product({ id, onAdd }) {
               <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest">
                 {p.category}
               </span>
-              {available > 0 ? (
+              {removed ? (
+                <span className="text-red-500 text-[10px] font-bold uppercase tracking-widest">
+                  Currently Unavailable
+                </span>
+              ) : available > 0 ? (
                 <span className="text-emerald-600 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                   In stock
@@ -239,14 +247,16 @@ export default function Product({ id, onAdd }) {
               <div className="flex items-center gap-2 mt-4">
                 <span
                   className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${
-                    available <= 0
+                    removed || available <= 0
                       ? "bg-red-50 text-red-500"
                       : available <= 5
                       ? "bg-orange-50 text-orange-600"
                       : "bg-gray-50 text-gray-600"
                   }`}
                 >
-                  {available <= 0
+                  {removed
+                    ? "Currently Unavailable"
+                    : available <= 0
                     ? "Out of stock"
                     : available <= 5
                     ? `Only ${available} left`

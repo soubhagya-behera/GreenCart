@@ -18,7 +18,16 @@ export default function ProductCard({ p, onAdd }) {
     src = fileUrl(p.image[idx]);
   }
 
-  const available = typeof p.stock === "number" ? p.stock : p.inStock ? 999 : 0;
+  // Removed by its seller (active === false) is unpurchasable regardless
+  // of the stock number still stored in the database.
+  const removed = p.active === false;
+  const available = removed
+    ? 0
+    : typeof p.stock === "number"
+    ? p.stock
+    : p.inStock
+    ? 999
+    : 0;
   const discount =
     p.offerPrice && p.price
       ? Math.max(0, Math.round(100 - (price / p.price) * 100))
@@ -60,7 +69,7 @@ export default function ProductCard({ p, onAdd }) {
         {available <= 0 && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center z-20">
             <span className="bg-gray-900 text-white px-3 py-1 rounded-full text-[9px] font-extrabold uppercase tracking-widest">
-              Out of Stock
+              {removed ? "Currently Unavailable" : "Out of Stock"}
             </span>
           </div>
         )}

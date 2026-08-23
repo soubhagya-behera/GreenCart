@@ -12,6 +12,7 @@ export default function Cart({
   onClearCart,
 }) {
   const [productMap, setProductMap] = useState({});
+  const [staleProducts, setStaleProducts] = useState({});
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
 
@@ -28,12 +29,52 @@ export default function Cart({
       .finally(() => setLoading(false));
   }, []);
 
-  const items = Object.entries(cart)
-    .map(([id, qty]) => {
-      const p = productMap[id];
-      return { p, qty };
-    })
-    .filter((x) => x.p);
+  // Items whose product is gone from /products were removed by their
+  // seller. Keep them visible as "Currently Unavailable" so the customer
+  // understands what happened instead of the bag silently shrinking.
+  // Details come from GET /products/{id}, which still serves the stored row.
+  const entries = Object.entries(cart).map(([id, qty]) => ({
+    id: String(id),
+    qty,
+  }));
+  const items = [];
+  const missingIds = [];
+  entries.forEach(({ id, qty }) => {
+    const p = productMap[id];
+    if (p) items.push({ p, qty });
+    else missingIds.push(id);
+  });
+
+  const missingKey = missingIds.join(",");
+  useEffect(() => {
+    if (!missingKey) return;
+    let cancelled = false;
+    Promise.all(
+      missingKey.split(",").map((id) =>
+        api(`/products/${id}`)
+          .then((p) => ({ id, p }))
+          .catch(() => ({ id, p: null }))
+      )
+    ).then((results) => {
+      if (cancelled) return;
+      setStaleProducts((prev) => {
+        const next = { ...prev };
+        results.forEach(({ id, p }) => {
+          next[id] = p;
+        });
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [missingKey]);
+
+  const unavailable = missingIds.map((id) => ({
+    id,
+    qty: cart[id] || 0,
+    p: staleProducts[id],
+  }));
 
   const subtotal = items.reduce(
     (s, { p, qty }) => s + (p.offerPrice ?? p.price) * qty,
@@ -96,6 +137,17 @@ export default function Cart({
       await alert({
         title: "Invalid Total",
         message: "Total amount must be at least ₹1",
+        type: "warning",
+      });
+      return;
+    }
+    // The backend rejects these too (checkout validates every cart line),
+    // but telling the customer here is far clearer than a failed request.
+    if (unavailable.length > 0) {
+      await alert({
+        title: "Item No Longer Available",
+        message:
+          "Some item(s) in your bag are no longer available from the seller. Please remove them to continue.",
         type: "warning",
       });
       return;
@@ -300,6 +352,15 @@ export default function Cart({
             </div>
           )}
 
+          {unavailable.length > 0 && (
+            <div className="bg-red-50 border border-red-100 text-red-700 rounded-xl px-4 py-3 text-sm font-semibold">
+              {unavailable.length === 1
+                ? "1 item in your bag is no longer available from the seller."
+                : `${unavailable.length} items in your bag are no longer available from the seller.`}{" "}
+              Remove {unavailable.length === 1 ? "it" : "them"} to check out.
+            </div>
+          )}
+
           <div className="space-y-4">
             {items.map(({ p, qty }) => {
               const price = p.offerPrice ?? p.price;
@@ -406,9 +467,69 @@ export default function Cart({
                 </div>
               );
             })}
-          </div>
+            {/* Removed by seller — kept visible so the bag never lies */}
+          {unavailable.map(({ id, p, qty }) => (
+            <div
+              key={id}
+              className="relative bg-red-50/40 rounded-2xl border border-red-100 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row gap-4 sm:gap-6 animate-fade-in"
+            >
+              <div className="w-full h-36 sm:w-28 sm:h-28 bg-gray-50 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+                <img
+                  src={p?.imageUrl ? fileUrl(p.imageUrl) : "/placeholder.png"}
+                  alt=""
+                  className="w-full h-full object-contain p-2 grayscale opacity-60"
+                  onError={(e) => {
+                    e.currentTarget.style.visibility = "hidden";
+                  }}
+                />
+              </div>
 
-          {items.length === 0 && (
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-bold text-gray-400 truncate">
+                      {p?.name || "Product"}
+                    </h3>
+                    <span className="inline-block mt-1.5 bg-red-100 text-red-600 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider">
+                      Currently Unavailable
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => onRemove(p || { id: Number(id) })}
+                    aria-label="Remove unavailable item"
+                    className="self-end sm:self-start p-2 -m-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <svg
+                      className="w-[18px] h-[18px]"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-start gap-4">
+                  <span className="text-xs font-bold text-gray-400">
+                    Qty {qty}
+                  </span>
+                  <p className="text-[11px] text-gray-400 sm:ml-auto max-w-[260px]">
+                    The seller removed this product from their inventory.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+          {items.length === 0 && unavailable.length === 0 && (
             <div className="py-20 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-200">
               <div className="text-5xl mb-4">🛒</div>
               <h2 className="text-lg font-bold text-gray-900 mb-1.5">

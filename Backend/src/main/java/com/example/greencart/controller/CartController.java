@@ -97,6 +97,16 @@ public CartItem add(
             .findById(body.getProductId())
             .orElseThrow();
 
+    // Removed by its seller (soft-deleted) → not purchasable.
+    if (Boolean.FALSE.equals(product.getActive())) {
+
+        throw new RuntimeException(
+                "This product ("
+                        + product.getName()
+                        + ") is no longer available"
+        );
+    }
+
     Cart cart = cartRepo.findByUser(user)
             .orElseGet(() -> {
 

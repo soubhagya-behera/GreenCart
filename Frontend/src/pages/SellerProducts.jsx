@@ -31,9 +31,9 @@ export default function SellerProducts() {
   });
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState("name");
   const [selected, setSelected] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
   const [showForm, setShowForm] = useState(
     () => window.location.hash === "#add-product"
   );
@@ -81,8 +81,6 @@ export default function SellerProducts() {
     const q = search.trim().toLowerCase();
     let list = state.products.filter((p) => {
       if (category !== "all" && p.category !== category) return false;
-      if (statusFilter === "active" && p.active === false) return false;
-      if (statusFilter === "inactive" && p.active !== false) return false;
       if (!q) return true;
       return [p.name, p.category].some((v) =>
         (v || "").toLowerCase().includes(q)
@@ -102,7 +100,7 @@ export default function SellerProducts() {
         list = [...list].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     }
     return list;
-  }, [state.products, search, category, statusFilter, sort]);
+  }, [state.products, search, category, sort]);
 
   async function addProduct(e) {
     e.preventDefault();
@@ -171,19 +169,35 @@ export default function SellerProducts() {
   }
 
   async function removeProduct(p) {
-    await confirm({
-      title: "Remove Listing",
-      message:
-        "Remove this listing? Items already ordered keep their history — the product is deactivated instead of deleted when needed.",
+    if (removingId !== null) return; // one removal at a time
+    const confirmed = await confirm({
+      title: "Remove From Inventory",
+      message: `Remove "${p.name}" from your inventory? Customers will no longer be able to buy it, but past orders and reviews stay intact.`,
       confirmText: "Remove",
       cancelText: "Cancel",
       danger: true,
       loadingText: "Removing...",
       onConfirm: async () => {
-        await api(`/products/${p.id}`, { method: "DELETE", auth: true });
+        setRemovingId(p.id);
+        try {
+          await api(`/products/${p.id}`, { method: "DELETE", auth: true });
+        } finally {
+          setRemovingId(null);
+        }
       },
     });
+    if (!confirmed) return;
+    // Drop the row immediately, then re-sync with backend truth.
+    setState((s) => ({
+      ...s,
+      products: s.products.filter((x) => x.id !== p.id),
+    }));
     fetchData();
+    await alert({
+      title: "Product Removed",
+      message: "Removed from your inventory. Order history is unaffected.",
+      type: "success",
+    });
   }
 
   const inputCls =
@@ -375,15 +389,6 @@ export default function SellerProducts() {
         </select>
         <select
           className={`${inputCls} font-bold`}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="all">Any status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-        <select
-          className={`${inputCls} font-bold`}
           value={sort}
           onChange={(e) => setSort(e.target.value)}
         >
@@ -505,9 +510,10 @@ export default function SellerProducts() {
                         </button>
                         <button
                           onClick={() => removeProduct(p)}
-                          className="text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-lg hover:bg-red-100 transition-colors"
+                          disabled={removingId !== null}
+                          className="text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-50 border border-red-100 px-2.5 py-1.5 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          Remove
+                          {removingId === p.id ? "Removing…" : "Remove"}
                         </button>
                       </div>
                     </td>

@@ -5,11 +5,7 @@ import com.example.greencart.entity.Product;
 import com.example.greencart.entity.User;
 import com.example.greencart.exception.ForbiddenException;
 import com.example.greencart.exception.UnauthorizedException;
-import com.example.greencart.repository.CartItemRepository;
-import com.example.greencart.repository.OrderItemRepository;
 import com.example.greencart.repository.ProductRepository;
-import com.example.greencart.repository.ReviewRepository;
-import com.example.greencart.repository.WishlistRepository;
 import com.example.greencart.service.FileUploadService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,19 +19,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ProductControllerSecurityTest {
 
     private ProductRepository repo;
     private FileUploadService fileUploadService;
-    private CartItemRepository cartItemRepo;
-    private WishlistRepository wishlistRepo;
-    private OrderItemRepository orderItemRepo;
-    private ReviewRepository reviewRepo;
     private SimpMessagingTemplate messagingTemplate;
     private ProductController controller;
 
@@ -55,18 +51,10 @@ class ProductControllerSecurityTest {
     void setUp() {
         repo = mock(ProductRepository.class);
         fileUploadService = mock(FileUploadService.class);
-        cartItemRepo = mock(CartItemRepository.class);
-        wishlistRepo = mock(WishlistRepository.class);
-        orderItemRepo = mock(OrderItemRepository.class);
-        reviewRepo = mock(ReviewRepository.class);
         messagingTemplate = mock(SimpMessagingTemplate.class);
         controller = new ProductController(
                 repo,
                 fileUploadService,
-                cartItemRepo,
-                wishlistRepo,
-                orderItemRepo,
-                reviewRepo,
                 messagingTemplate);
     }
 
@@ -81,6 +69,14 @@ class ProductControllerSecurityTest {
         p.setId(77L);
         p.setName("Rice");
         p.setSeller(sellerB);
+        return p;
+    }
+
+    private Product ownedByA() {
+        Product p = new Product();
+        p.setId(5L);
+        p.setName("Wheat");
+        p.setSeller(sellerA);
         return p;
     }
 
@@ -141,11 +137,62 @@ class ProductControllerSecurityTest {
 
         Mockito.reset(repo);
         when(repo.findById(77L)).thenReturn(java.util.Optional.of(rice));
-        Mockito.doNothing().when(cartItemRepo).deleteByProduct(any());
-        Mockito.doNothing().when(wishlistRepo).deleteByProduct(any());
+        when(repo.save(any(Product.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
 
-        assertEquals("Product deleted",
+        // Admin removal is also a soft deactivation, never a hard delete.
+        assertEquals("Product removed from your inventory",
                 controller.deleteProduct(77L, requestFor(admin)));
+        assertFalse(rice.getActive());
+        verify(repo, never()).delete(any(Product.class));
+    }
+
+    // ---- SOFT REMOVE (inventory deactivation) ----------------------------
+
+    @Test
+    void ownerRemoveDeactivatesWithoutPhysicalDelete() {
+        Product mine = ownedByA();
+        when(repo.findById(5L)).thenReturn(java.util.Optional.of(mine));
+        when(repo.save(any(Product.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        String message = controller.deleteProduct(5L, requestFor(sellerA));
+
+        assertEquals("Product removed from your inventory", message);
+        assertEquals(Boolean.FALSE, mine.getActive());
+        verify(repo).save(mine);
+        verify(repo, never()).delete(any(Product.class));
+        verify(repo, never()).deleteById(anyLong());
+    }
+
+    @Test
+    void removeIsIdempotent_whenAlreadyRemoved() {
+        Product mine = ownedByA();
+        mine.setActive(false);
+        when(repo.findById(5L)).thenReturn(java.util.Optional.of(mine));
+        when(repo.save(any(Product.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        String message = controller.deleteProduct(5L, requestFor(sellerA));
+
+        assertEquals("Product removed from your inventory", message);
+        assertEquals(Boolean.FALSE, mine.getActive());
+        verify(repo, never()).delete(any(Product.class));
+    }
+
+    @Test
+    void removedProductKeepsOrderAndReviewHistoryIntact() {
+        Product mine = ownedByA();
+        when(repo.findById(5L)).thenReturn(java.util.Optional.of(mine));
+        when(repo.save(any(Product.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        controller.deleteProduct(5L, requestFor(sellerA));
+
+        // The row survives with every field untouched except `active`.
+        assertEquals("Wheat", mine.getName());
+        assertEquals(sellerA, mine.getSeller());
+        verify(repo).save(mine);
     }
 
     @Test

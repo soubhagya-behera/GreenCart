@@ -1,7 +1,11 @@
 package com.example.greencart.security;
 
 import com.example.greencart.controller.OrderController;
+import com.example.greencart.dto.CheckoutDTO;
+import com.example.greencart.entity.Cart;
+import com.example.greencart.entity.CartItem;
 import com.example.greencart.entity.Order;
+import com.example.greencart.entity.Product;
 import com.example.greencart.entity.User;
 import com.example.greencart.exception.ForbiddenException;
 
@@ -29,6 +33,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -170,5 +175,90 @@ class OrderControllerSecurityTest {
 
         assertEquals("Processing", result.get(0).getOrderStatus());
         verify(repo, never()).save(any(Order.class));
+    }
+
+    // ---- CHECKOUT vs REMOVED PRODUCTS ------------------------------------
+
+    @Test
+    void checkoutBlockedWhenCartContainsRemovedProduct() {
+        User seller = user(3L, "seller");
+
+        Product removed = new Product();
+        removed.setId(9L);
+        removed.setName("Old Rice");
+        removed.setStock(50);
+        removed.setActive(false);
+        removed.setSeller(seller);
+
+        CartItem staleItem = new CartItem();
+        staleItem.setProduct(removed);
+        staleItem.setQty(2);
+
+        Cart cart = new Cart();
+        cart.setUser(customer);
+
+        when(cartRepo.findByUser(customer)).thenReturn(Optional.of(cart));
+        when(itemRepo.findByCart(cart)).thenReturn(List.of(staleItem));
+
+        CheckoutDTO dto = new CheckoutDTO();
+        dto.setAddress("1 Main Street, Springfield");
+        dto.setPaymentMethod("COD");
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> controller.checkout(dto, requestFor(customer)));
+
+        assertTrue(ex.getMessage().contains("no longer available"));
+
+        // No order, no stock mutation, no order items may be persisted.
+        verify(repo, never()).save(any(Order.class));
+        verify(productRepo, never()).save(any(Product.class));
+        verify(orderItemRepo, never()).save(any());
+        verify(itemRepo, never()).deleteAll(any());
+    }
+
+    @Test
+    void checkoutSucceedsWhenAllCartProductsAreActive() {
+        User seller = user(3L, "seller");
+
+        Product fresh = new Product();
+        fresh.setId(10L);
+        fresh.setName("Fresh Rice");
+        fresh.setPrice(100.0);
+        fresh.setOfferPrice(null);
+        fresh.setStock(50);
+        fresh.setActive(true);
+        fresh.setSeller(seller);
+
+        CartItem good = new CartItem();
+        good.setProduct(fresh);
+        good.setQty(2);
+
+        Cart cart = new Cart();
+        cart.setUser(customer);
+
+        when(cartRepo.findByUser(customer)).thenReturn(Optional.of(cart));
+        when(itemRepo.findByCart(cart)).thenReturn(List.of(good));
+        when(repo.save(any(Order.class)))
+                .thenAnswer(inv -> {
+                    Order o = inv.getArgument(0);
+                    o.setId(99L);
+                    return o;
+                });
+        when(productRepo.save(any(Product.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(orderItemRepo.save(any()))
+                .thenAnswer(inv -> inv.getArgument(0));
+        when(orderItemRepo.findByOrder(any(Order.class)))
+                .thenReturn(List.of());
+
+        CheckoutDTO dto = new CheckoutDTO();
+        dto.setAddress("1 Main Street, Springfield");
+        dto.setPaymentMethod("COD");
+
+        Order created = controller.checkout(dto, requestFor(customer));
+
+        assertEquals(200.0, created.getTotal());
+        assertEquals(48, fresh.getStock());
+        verify(itemRepo).deleteAll(List.of(good));
     }
 }

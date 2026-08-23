@@ -83,11 +83,23 @@ public class OrderController {
                 .orElseThrow(() -> new RuntimeException("Cart not found"));
 
         List<CartItem> cartItems = itemRepo.findByCart(cart);
-        // Prevent seller from buying own products
+
+        // Validate every line BEFORE anything is persisted: a product that
+        // was removed by its seller (soft-deleted) must never enter an
+        // order, even via direct API calls.
         for (CartItem item : cartItems) {
 
             Product product = item.getProduct();
 
+            if (Boolean.FALSE.equals(product.getActive())) {
+
+                throw new RuntimeException(
+                        product.getName()
+                                + " is no longer available."
+                                + " Please remove it from your cart.");
+            }
+
+            // Prevent seller from buying own products
             if (product.getSeller() != null &&
                     product.getSeller().getId().equals(user.getId())) {
 

@@ -114,6 +114,10 @@ export default function App() {
   }
   function handleAdd(p, qty = 1, goToCart = false) {
     if (!getToken()) { navigate("/auth"); return; }
+    if (p?.active === false) {
+      showToast("Sorry, this item is no longer available.");
+      return;
+    }
     const requested = Math.max(1, Math.floor(Number(qty) || 1));
     const inCart = cart[p?.id] || 0;
     const available = p?.stock ?? 999;
@@ -154,6 +158,10 @@ export default function App() {
   }
   function inc(p) {
     if (!getToken()) { navigate("/auth"); return; }
+    if (p?.active === false) {
+      showToast("Sorry, this item is no longer available.");
+      return;
+    }
     const inCart = cart[p?.id] || 0;
     const available = p?.stock ?? 999;
     

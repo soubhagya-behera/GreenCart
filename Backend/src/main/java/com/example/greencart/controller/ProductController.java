@@ -1,17 +1,12 @@
 package com.example.greencart.controller;
 
 import com.example.greencart.entity.Product;
-import com.example.greencart.repository.CartItemRepository;
-import com.example.greencart.repository.OrderItemRepository;
 import com.example.greencart.repository.ProductRepository;
-import com.example.greencart.repository.ReviewRepository;
-import com.example.greencart.repository.WishlistRepository;
 import com.example.greencart.service.FileUploadService;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,10 +33,6 @@ public class ProductController {
 
     private final ProductRepository repo;
     private final FileUploadService fileUploadService;
-    private final CartItemRepository cartItemRepo;
-    private final WishlistRepository wishlistRepo;
-    private final OrderItemRepository orderItemRepo;
-    private final ReviewRepository reviewRepo;
     private final SimpMessagingTemplate messagingTemplate;
 
     @GetMapping
@@ -162,7 +153,9 @@ public List<Product> mine(HttpServletRequest request) {
             AccessGuard.hasAnyRole(user, "seller", "admin"),
             "Access denied"
     );
-    return repo.findBySeller(user);
+    // Inventory = active listings only. Removed products are kept in the
+    // database but no longer appear here.
+    return repo.findBySellerAndActiveTrue(user);
 }
 
 @PutMapping("/{id}/stock")
@@ -196,7 +189,6 @@ public Product updateStock(
 }
 
 @DeleteMapping("/{id}")
-@Transactional
 public String deleteProduct(
         @PathVariable Long id,
         HttpServletRequest request
@@ -217,23 +209,20 @@ public String deleteProduct(
 
     AccessGuard.require(
             AccessGuard.canManageProduct(user, product),
-            "You can only delete your own products"
+            "You can only remove your own products"
     );
 
-    cartItemRepo.deleteByProduct(product);
-    wishlistRepo.deleteByProduct(product);
+    // REMOVE FROM INVENTORY (soft delete).
+    // The Product row is never physically deleted: historical OrderItems,
+    // reviews, carts and wishlists keep their references and stay intact.
+    // Deactivation hides the product from the marketplace (GET /products)
+    // and from this seller's inventory (GET /products/mine); customers can
+    // no longer purchase it (enforced in cart + checkout). Idempotent:
+    // removing an already-removed product changes nothing.
+    product.setActive(false);
+    repo.save(product);
 
-    if (
-            orderItemRepo.existsByProduct(product)
-            || reviewRepo.existsByProduct(product)
-    ) {
-        product.setActive(false);
-        repo.save(product);
-        return "Product removed from store. Order and review history preserved.";
-    }
-
-    repo.delete(product);
-    return "Product deleted";
+    return "Product removed from your inventory";
 }
 
 
