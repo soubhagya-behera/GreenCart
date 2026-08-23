@@ -86,10 +86,11 @@ public ResponseEntity<?> createOrder(
 
 
  @PostMapping("/verify")
-public ResponseEntity<?> verifyPayment(
+ @org.springframework.transaction.annotation.Transactional
+ public ResponseEntity<?> verifyPayment(
         @RequestBody PaymentVerifyDTO dto,
         HttpServletRequest request
-) throws Exception {
+ ) throws Exception {
 
     User user = (User) request.getAttribute("user");
 
@@ -135,15 +136,26 @@ public ResponseEntity<?> verifyPayment(
             dto.getRazorpayPaymentId()
     );
 
-    orderRepo.save(order);
+    Order saved = orderRepo.save(order);
+
+    // Both events dispatch AFTER this transaction commits.
+    deliveryService.publish("PAYMENT_STATUS_CHANGED", saved);
 
     // Paid UPI order is now deliverable — announce it to delivery partners.
-    deliveryService.notifyNewRequest(order);
+    deliveryService.notifyNewRequest(saved);
 
+    // The verified order is returned so the client can display the real
+    // backend state immediately (no refetch round-trip needed).
     return ResponseEntity.ok(
             Map.of(
                     "message",
-                    "Payment verified"
+                    "Payment verified",
+
+                    "orderId",
+                    saved.getId(),
+
+                    "order",
+                    saved
             )
     );
 }

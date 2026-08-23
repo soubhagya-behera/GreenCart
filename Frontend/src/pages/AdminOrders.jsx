@@ -9,6 +9,8 @@ import {
   formatINR,
   formatDateTime,
 } from "../lib/orderStatuses";
+import { subscribeDelivery } from "../lib/deliverySocket";
+import { patchOrderWithEvent } from "../lib/orderSocket";
 
 export default function AdminOrders() {
   const { alert, confirm } = useDialog();
@@ -41,6 +43,34 @@ export default function AdminOrders() {
 
   useEffect(() => {
     fetchData();
+  }, []);
+
+  // ---- live order updates ----------------------------------------------
+  // Every lifecycle transition is broadcast on /topic/delivery. Known
+  // orders are patched in place instantly; anything else (a brand-new
+  // checkout, full DTO refresh) triggers one debounced silent refetch.
+  useEffect(() => {
+    let timer = null;
+    const off = subscribeDelivery((event) => {
+      if (typeof event.orderId !== "number") return; // PARTNER_STATUS etc.
+      setState((s) => ({
+        ...s,
+        orders: s.orders.some((o) => o.id === event.orderId)
+          ? s.orders.map((o) => patchOrderWithEvent(o, event))
+          : s.orders,
+      }));
+      setSelected((sel) =>
+        sel && sel.id === event.orderId
+          ? patchOrderWithEvent(sel, event)
+          : sel
+      );
+      clearTimeout(timer);
+      timer = setTimeout(fetchData, 900);
+    });
+    return () => {
+      off();
+      clearTimeout(timer);
+    };
   }, []);
 
   const paymentOptions = useMemo(

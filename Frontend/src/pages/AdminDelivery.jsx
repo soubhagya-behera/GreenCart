@@ -4,6 +4,7 @@ import PageHeader from "../components/admin/PageHeader";
 import AdminDataTable from "../components/admin/AdminDataTable";
 import StatusBadge from "../components/admin/StatusBadge";
 import { formatINR, formatDateTime } from "../lib/orderStatuses";
+import { subscribeDelivery } from "../lib/deliverySocket";
 
 function PartnerState({ online, active }) {
   if (!online) {
@@ -64,8 +65,26 @@ export default function AdminDelivery() {
 
   useEffect(() => {
     fetchData();
-    const iv = setInterval(fetchData, 30000);
+    // Reconnect/failure fallback only — the normal path is event-driven.
+    const iv = setInterval(fetchData, 60000);
     return () => clearInterval(iv);
+  }, []);
+
+  // ---- live delivery ops ------------------------------------------------
+  // NEW_REQUEST / ACCEPTED / ORDER_COMPLETED / CANCELLED / PARTNER_STATUS /
+  // ORDER_STATUS_CHANGED all trigger an immediate debounced refresh, so the
+  // roster and assignment board track backend truth without manual refresh.
+  // The interval stays only as a reconnect/failure fallback.
+  useEffect(() => {
+    let timer = null;
+    const off = subscribeDelivery(() => {
+      clearTimeout(timer);
+      timer = setTimeout(fetchData, 300);
+    });
+    return () => {
+      off();
+      clearTimeout(timer);
+    };
   }, []);
 
   const rows = useMemo(() => {

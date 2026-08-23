@@ -27,6 +27,7 @@ export default function DeliveryLayout({ user, route, onLogout, children }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const menuRef = useRef(null);
   const toastSeq = useRef(0);
+  const toastOrderIds = useRef(new Set());
 
   const isActive = (path) =>
     path === "/delivery" ? route === "/delivery" : route.startsWith(path);
@@ -75,27 +76,61 @@ export default function DeliveryLayout({ user, route, onLogout, children }) {
 
   useEffect(() => {
     const off = subscribeDelivery((event) => {
+      // Any lifecycle event re-syncs the active page's data hooks.
       setRefreshKey((k) => k + 1);
+
+      const mine =
+        event.partnerId != null &&
+        user?.id != null &&
+        event.partnerId === user.id;
+
+      // Queue size changed → adjust instantly, then reconcile against the
+      // partner-aware backend list so the badge always converges on truth.
+      switch (event.type) {
+        case "NEW_REQUEST":
+          setRequestCount((c) => c + 1);
+          refreshBadge();
+          break;
+        case "ACCEPTED":
+        case "CANCELLED":
+          setRequestCount((c) => Math.max(0, c - 1));
+          refreshBadge();
+          break;
+        case "DELIVERY_REJECTED":
+          // Only the rejecting partner's queue shrinks.
+          if (mine) {
+            setRequestCount((c) => Math.max(0, c - 1));
+            refreshBadge();
+          }
+          break;
+        default:
+          break;
+      }
+
       if (event.type === "NEW_REQUEST") {
-        refreshBadge();
-        const id = ++toastSeq.current;
-        setToasts((t) => [
-          ...t.slice(-2),
-          {
-            id,
-            orderId: event.orderId,
-            total: event.total,
-            paymentMethod: event.paymentMethod,
-          },
-        ]);
-        setTimeout(
-          () => setToasts((t) => t.filter((x) => x.id !== id)),
-          8000
-        );
+        // One request per order — never stack duplicate toasts for the same
+        // order id (event replay / reconnects).
+        if (!toastOrderIds.current.has(event.orderId)) {
+          toastOrderIds.current.add(event.orderId);
+          const id = ++toastSeq.current;
+          setToasts((t) => [
+            ...t.slice(-2),
+            {
+              id,
+              orderId: event.orderId,
+              total: event.total,
+              paymentMethod: event.paymentMethod,
+            },
+          ]);
+          setTimeout(() => {
+            toastOrderIds.current.delete(event.orderId);
+            setToasts((t) => t.filter((x) => x.id !== id));
+          }, 8000);
+        }
       }
     });
     return off;
-  }, [refreshBadge]);
+  }, [refreshBadge, user?.id]);
 
   // Close the profile menu on outside click.
   useEffect(() => {

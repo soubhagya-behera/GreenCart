@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, fileUrl } from "../lib/api";
 import { assets } from "../assets/greencart/greencart_assets/assets";
 import ReviewModal from "../components/ReviewModal";
 import { useDialog } from "../components/common/DialogContext";
+import {
+  subscribeOrderEvents,
+  patchOrderWithEvent,
+} from "../lib/orderSocket";
+import {
+  getOrders,
+  upsertOrders,
+  patchKnownOrder,
+  subscribeOrders,
+} from "../lib/customerOrders";
 
 const steps = ["Processing", "Packed", "Shipped", "OutForDelivery", "Delivered"];
 
@@ -246,13 +256,33 @@ function OrderCard({ o, onCancelled, productMap, onReview, reviewedProducts }) {
 }
 
 export default function Orders() {
-  const [orders, setOrders] = useState([]);
+  // Hydrate from the shared store first: an order just placed at checkout
+  // (the real backend response) is already here and renders immediately.
+  const [orders, setOrders] = useState(getOrders);
   const [loading, setLoading] = useState(true);
   const [productMap, setProductMap] = useState({});
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState(null);
   const [reviewedProducts, setReviewedProducts] = useState({});
   const reviewCount = Object.values(reviewedProducts).filter(Boolean).length;
+
+  // Review flags are cosmetic — resolve them in the background so they can
+  // never delay the first paint of the order list.
+  const refreshReviewFlags = async (list) => {
+    const reviewedMap = {};
+    for (const order of list || []) {
+      for (const item of order.items || []) {
+        if (!item?.product?.id) continue;
+        try {
+          reviewedMap[item.product.id] = await api(
+            `/reviews/check/${item.product.id}`,
+            { auth: true }
+          );
+        } catch (e) { /* flag stays undefined; UI treats as not reviewed */ }
+      }
+    }
+    setReviewedProducts(reviewedMap);
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -262,32 +292,78 @@ export default function Orders() {
         api("/products"),
       ]);
 
-      const sortedOrders = Array.isArray(orderRes) ? [...orderRes].sort((a, b) => b.id - a.id) : [];
-      setOrders(sortedOrders);
+      const sortedOrders = Array.isArray(orderRes)
+        ? [...orderRes].sort((a, b) => b.id - a.id)
+        : [];
+      // Backend response is the source of truth; the store dedupes by id
+      // (checkout response + events + refetch all converge on one entry).
+      upsertOrders(sortedOrders);
 
       const map = {};
       (Array.isArray(prodRes) ? prodRes : []).forEach((p) => (map[p.id] = p));
       setProductMap(map);
-
-      const reviewedMap = {};
-      for (const order of sortedOrders) {
-        for (const item of order.items) {
-          try {
-            const reviewed = await api(`/reviews/check/${item.product.id}`, { auth: true });
-            reviewedMap[item.product.id] = reviewed;
-          } catch (e) {}
-        }
-      }
-      setReviewedProducts(reviewedMap);
     } catch (e) {
-      setOrders([]);
+      setOrders(getOrders());
     } finally {
       setLoading(false);
+    }
+    refreshReviewFlags(getOrders());
+  };
+
+  // Silent revalidation: refresh order data without the loading skeleton.
+  // Trailing-overlap guard: while a fetch is in flight new requests are
+  // coalesced and re-run after it lands, so the LAST requested fetch always
+  // wins and a stale response can never overwrite fresher state.
+  const revalidatingRef = useRef(false);
+  const pendingRef = useRef(false);
+  const revalidateOrders = async () => {
+    if (revalidatingRef.current) {
+      pendingRef.current = true;
+      return;
+    }
+    revalidatingRef.current = true;
+    try {
+      const list = await api("/orders/my", { auth: true });
+      if (Array.isArray(list)) upsertOrders(list);
+    } catch {
+      /* keep current view; next event or navigation resyncs */
+    } finally {
+      revalidatingRef.current = false;
+      if (pendingRef.current) {
+        pendingRef.current = false;
+        revalidateOrders();
+      }
     }
   };
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Store → view. The store emits on every upsert/patch.
+  useEffect(() => subscribeOrders(setOrders), []);
+
+  // ---- live order updates ----------------------------------------------
+  // Backend pushes every lifecycle transition to this customer's private
+  // STOMP queue. Known orders are patched into the store instantly; an event
+  // for an order we do not have yet (created from another device/session,
+  // or the checkout response was lost) pulls the real data immediately —
+  // no fixed-delay wait, no fabricated rows. No polling, no manual refresh.
+  useEffect(() => {
+    let timer = null;
+    const off = subscribeOrderEvents((event) => {
+      const patched =
+        patchKnownOrder(event.orderId, patchOrderWithEvent(
+          getOrders().find((o) => o.id === event.orderId), event
+        )) ||
+        getOrders().some((o) => o.id === event.orderId);
+      clearTimeout(timer);
+      timer = setTimeout(revalidateOrders, patched ? 900 : 0);
+    });
+    return () => {
+      off();
+      clearTimeout(timer);
+    };
   }, []);
 
   return (

@@ -8,11 +8,11 @@ import com.example.greencart.exception.ForbiddenException;
 import com.example.greencart.exception.UnauthorizedException;
 import com.example.greencart.repository.OrderRepository;
 import com.example.greencart.service.DeliveryService;
+import com.example.greencart.service.OrderEventPublisher;
 import com.example.greencart.service.RazorpayService;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -52,7 +52,9 @@ class PaymentControllerSecurityTest {
         controller = new PaymentController(
                 razorpayService,
                 orderRepo,
-                new DeliveryService(orderRepo, mock(SimpMessagingTemplate.class)));
+                new DeliveryService(orderRepo,
+                        mock(com.example.greencart.repository.OrderRejectionRepository.class),
+                        mock(OrderEventPublisher.class)));
     }
 
     private HttpServletRequest requestFor(User u) {

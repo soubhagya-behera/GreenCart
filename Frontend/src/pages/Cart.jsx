@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { navigate } from "../lib/router";
 import { api, getToken, fileUrl } from "../lib/api";
+import { upsertOrder } from "../lib/customerOrders";
 import { useDialog } from "../components/common/DialogContext";
 
 export default function Cart({
@@ -124,11 +125,15 @@ export default function Cart({
     setPlacing(true);
     if (method === "Cash On Delivery") {
       try {
-        await api("/orders/checkout", {
+        const created = await api("/orders/checkout", {
           method: "POST",
           body: { address: payload.address, paymentMethod: "COD" },
           auth: true,
         });
+        // The backend response is the real persisted order — seed the
+        // shared store so My Orders shows it instantly, deduped by id
+        // against the ORDER_CREATED event and later refetches.
+        if (created?.id != null) upsertOrder(created);
         await alert({
           title: "Order Placed",
           message: "Order placed successfully",
@@ -157,6 +162,8 @@ export default function Cart({
           auth: true,
         });
         const savedOrderId = orderRes.id;
+        // Real backend order (Awaiting Payment until the gateway verifies).
+        if (orderRes?.id != null) upsertOrder(orderRes);
 
         const rzpOrder = await api(`/payment/create-order?orderId=${savedOrderId}`, {
           method: "POST",
@@ -204,7 +211,7 @@ export default function Cart({
           handler: async function (response) {
             try {
               setPaymentLoading(true);
-              await api("/payment/verify", {
+              const verifyRes = await api("/payment/verify", {
                 method: "POST",
                 auth: true,
                 body: {
@@ -214,6 +221,8 @@ export default function Cart({
                   orderId: savedOrderId,
                 },
               });
+              // Verified order straight from the backend (Confirmed/Paid).
+              if (verifyRes?.order?.id != null) upsertOrder(verifyRes.order);
 
               onClearCart && onClearCart();
               navigate("/orders");

@@ -59,7 +59,9 @@ public class OrderController {
     }
 
     // CHECKOUT API
-    // CHECKOUT API
+    // Transactional so order + items + stock + cart-clear commit atomically;
+    // the NEW_REQUEST event is dispatched only after that commit.
+    @org.springframework.transaction.annotation.Transactional
     @PostMapping("/checkout")
     public Order checkout(
             @RequestBody CheckoutDTO dto,
@@ -170,6 +172,11 @@ public class OrderController {
         savedOrder.setItems(
                 orderItemRepo.findByOrder(savedOrder));
 
+        // The order exists and is persisted — tell everyone (including the
+        // owning customer's private queue) immediately, for BOTH payment
+        // methods. Dispatched AFTER commit by OrderEventPublisher.
+        deliveryService.publish("ORDER_CREATED", savedOrder);
+
         // COD orders are deliverable immediately; UPI orders only become
         // requests after payment verification (see PaymentController).
         if (OrderStatuses.PROCESSING.equals(savedOrder.getOrderStatus())) {
@@ -202,7 +209,9 @@ public class OrderController {
                 "Only the assigned delivery partner or an admin can update this order"
         );
         order.setOrderStatus("Picked Up");
-        return repo.save(order);
+        Order saved = repo.save(order);
+        deliveryService.publish("ORDER_STATUS_CHANGED", saved);
+        return saved;
     }
 
     // Acknowledge delivery (with OTP)

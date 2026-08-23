@@ -14,6 +14,7 @@ import com.example.greencart.repository.CouponRepository;
 import com.example.greencart.repository.OrderRepository;
 import com.example.greencart.repository.ProductRepository;
 import com.example.greencart.repository.UserRepository;
+import com.example.greencart.service.OrderEventPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +64,8 @@ class AdminControllerPhase1Test {
         orderRepo = mock(OrderRepository.class);
         couponRepo = mock(CouponRepository.class);
         controller = new AdminController(
-                userRepo, productRepo, orderRepo, couponRepo);
+                userRepo, productRepo, orderRepo, couponRepo,
+                mock(OrderEventPublisher.class));
     }
 
     private HttpServletRequest requestFor(User u) {

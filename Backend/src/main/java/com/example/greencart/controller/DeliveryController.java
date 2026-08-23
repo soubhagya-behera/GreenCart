@@ -6,6 +6,7 @@ import com.example.greencart.entity.Order;
 import com.example.greencart.entity.User;
 import com.example.greencart.repository.UserRepository;
 import com.example.greencart.service.DeliveryService;
+import com.example.greencart.service.OrderEventPublisher;
 import com.example.greencart.util.AccessGuard;
 import com.example.greencart.exception.ForbiddenException;
 import com.example.greencart.exception.UnauthorizedException;
@@ -30,6 +31,8 @@ public class DeliveryController {
 
     private final DeliveryService deliveryService;
 
+    private final OrderEventPublisher deliveryEventPublisher;
+
     private final UserRepository userRepo;
 
     // Current partner identity + availability (profile header / toggle).
@@ -44,6 +47,7 @@ public class DeliveryController {
     // Online/Offline availability toggle.
     // While delivering, the dashboard derives BUSY from active orders —
     // availability and workload never contradict each other.
+    // Broadcasts a PARTNER_STATUS event (admin roster updates live).
     @PutMapping("/availability")
     public User setAvailability(
             @RequestBody Map<String, Boolean> body,
@@ -56,7 +60,11 @@ public class DeliveryController {
 
         user.setOnline(online);
 
-        return sanitize(userRepo.save(user));
+        User saved = userRepo.save(user);
+
+        deliveryEventPublisher.publishPartnerStatus(saved);
+
+        return sanitize(saved);
     }
 
     // Overview cards — computed from real order data.
@@ -68,13 +76,14 @@ public class DeliveryController {
         return deliveryService.overview(user);
     }
 
-    // NEW DELIVERY REQUESTS — unassigned orders waiting for a partner.
+    // NEW DELIVERY REQUESTS — unassigned orders waiting for a partner,
+    // minus the ones THIS partner rejected (partner-aware list).
     @GetMapping("/requests")
     public List<DeliveryRequestDTO> requests(HttpServletRequest req) {
 
-        requireDelivery(req);
+        User user = requireDelivery(req);
 
-        return deliveryService.availableRequests();
+        return deliveryService.availableRequests(user);
     }
 
     // MY ORDERS — active deliveries + completed history for this partner.
@@ -96,6 +105,22 @@ public class DeliveryController {
         User user = requireDelivery(req);
 
         return deliveryService.accept(user, id);
+    }
+
+    // REJECT REQUEST — hides this order from THIS partner only; other
+    // partners can still accept it. Never assigns, never starts a timer.
+    // Idempotent on the backend.
+    @PutMapping("/orders/{id}/reject")
+    public Map<String, String> rejectOrder(
+            @PathVariable Long id,
+            HttpServletRequest req
+    ) {
+
+        User user = requireDelivery(req);
+
+        deliveryService.reject(user, id);
+
+        return Map.of("message", "Request rejected");
     }
 
     // MARK DELIVERED — manual completion following the same payment rules

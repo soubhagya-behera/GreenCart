@@ -12,7 +12,7 @@ import {
   ErrorBox,
 } from "../components/delivery/ui";
 
-function RequestCard({ r, online, acceptingId, onAccept }) {
+function RequestCard({ r, online, busyId, onAccept, onReject }) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
     r.address || ""
   )}`;
@@ -96,22 +96,38 @@ function RequestCard({ r, online, acceptingId, onAccept }) {
       </div>
 
       <div className="px-5 pb-5">
-        <button
-          disabled={!online || acceptingId !== null}
-          onClick={() => onAccept(r)}
-          title={online ? undefined : "Go online to accept requests"}
-          className={`w-full py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${
-            online
-              ? "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-lg shadow-emerald-600/15"
-              : "bg-gray-200 text-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {acceptingId === r.id
-            ? "Accepting…"
-            : !online
-            ? "Go Online to Accept"
-            : `Accept Order · ${formatINR(r.total)}`}
-        </button>
+        <div className="grid grid-cols-5 gap-3">
+          {/* REJECT — hides this request for this partner only */}
+          <button
+            disabled={!online || busyId !== null}
+            onClick={() => onReject(r)}
+            className={`col-span-2 py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] border transition-colors ${
+              online
+                ? "bg-white border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+                : "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
+            }`}
+          >
+            {busyId === r.id ? "…" : "Reject"}
+          </button>
+
+          {/* ACCEPT ORDER — atomic backend claim (409 if someone else won) */}
+          <button
+            disabled={!online || busyId !== null}
+            onClick={() => onAccept(r)}
+            title={online ? undefined : "Go online to accept requests"}
+            className={`col-span-3 py-4 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${
+              online
+                ? "bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white shadow-lg shadow-emerald-600/15"
+                : "bg-gray-200 text-gray-400 cursor-not-allowed"
+            }`}
+          >
+            {busyId === r.id
+              ? "Working…"
+              : !online
+              ? "Go Online to Accept"
+              : `Accept Order · ${formatINR(r.total)}`}
+          </button>
+        </div>
         {!online && (
           <p className="text-center text-[10px] font-bold text-gray-400 mt-2">
             Toggle availability in the header to start receiving requests.
@@ -126,11 +142,11 @@ export default function DeliveryRequests() {
   const { online } = useDeliveryPortal();
   const { requests, loading, error, reload } = useDeliveryRequests();
   const { alert } = useDialog();
-  const [acceptingId, setAcceptingId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
 
   async function handleAccept(r) {
-    if (acceptingId) return;
-    setAcceptingId(r.id);
+    if (busyId) return;
+    setBusyId(r.id);
     try {
       await api(`/delivery/orders/${r.id}/accept`, { method: "PUT", auth: true });
       await alert({
@@ -153,7 +169,35 @@ export default function DeliveryRequests() {
         });
       }
     } finally {
-      setAcceptingId(null);
+      setBusyId(null);
+      reload(); // re-sync with backend truth either way
+    }
+  }
+
+  async function handleReject(r) {
+    if (busyId) return;
+    setBusyId(r.id);
+    try {
+      // Backend records the rejection for THIS partner only — other
+      // partners still see and can accept the same order. No assignment,
+      // no delivery timer.
+      await api(`/delivery/orders/${r.id}/reject`, { method: "PUT", auth: true });
+    } catch (e) {
+      if (e.status === 409) {
+        await alert({
+          title: "No Longer Available",
+          message: "Another delivery partner already accepted this order.",
+          type: "warning",
+        });
+      } else {
+        await alert({
+          title: "Reject Failed",
+          message: errorMessage(e),
+          type: "error",
+        });
+      }
+    } finally {
+      setBusyId(null);
       reload(); // re-sync with backend truth either way
     }
   }
@@ -168,8 +212,8 @@ export default function DeliveryRequests() {
           Available Requests
         </h1>
         <p className="text-xs font-bold text-gray-400 mt-1">
-          Orders appear here automatically as customers check out.
-          {!online && " You are offline — go online to accept."}
+          Orders appear here automatically as customers check out. Rejecting one only hides it from you — other partners can still accept it.
+          {!online && " You are offline — go online to respond."}
         </p>
       </div>
 
@@ -190,8 +234,9 @@ export default function DeliveryRequests() {
               key={r.id}
               r={r}
               online={online}
-              acceptingId={acceptingId}
+              busyId={busyId}
               onAccept={handleAccept}
+              onReject={handleReject}
             />
           ))}
         </div>

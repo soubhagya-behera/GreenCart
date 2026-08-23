@@ -8,14 +8,16 @@ import com.example.greencart.exception.ForbiddenException;
 import com.example.greencart.repository.CartItemRepository;
 import com.example.greencart.repository.CartRepository;
 import com.example.greencart.repository.OrderItemRepository;
+import com.example.greencart.repository.OrderRejectionRepository;
 import com.example.greencart.repository.OrderRepository;
 import com.example.greencart.repository.ProductRepository;
 import com.example.greencart.service.DeliveryService;
 import com.example.greencart.service.FileUploadService;
+import com.example.greencart.service.OrderEventPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,7 +68,8 @@ class OrderControllerSecurityTest {
         productRepo = mock(ProductRepository.class);
         fileUploadService = mock(FileUploadService.class);
         deliveryService = new DeliveryService(
-                repo, mock(SimpMessagingTemplate.class));
+                repo, mock(OrderRejectionRepository.class),
+                mock(OrderEventPublisher.class));
         controller = new OrderController(
                 repo, cartRepo, itemRepo, orderItemRepo,
                 productRepo, fileUploadService, deliveryService);

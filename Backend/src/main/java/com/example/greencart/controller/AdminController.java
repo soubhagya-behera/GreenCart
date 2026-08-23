@@ -10,6 +10,7 @@ import com.example.greencart.dto.AnalyticsDTO;
 
 import com.example.greencart.util.AccessGuard;
 import com.example.greencart.util.OrderStatuses;
+import com.example.greencart.service.OrderEventPublisher;
 import com.example.greencart.exception.ForbiddenException;
 import com.example.greencart.exception.UnauthorizedException;
 
@@ -38,6 +39,8 @@ public class AdminController {
     private final OrderRepository orderRepo;
 
     private final CouponRepository couponRepo;
+
+    private final OrderEventPublisher orderEventPublisher;
 
     // CHECK ADMIN
     private User getAdmin(
@@ -168,6 +171,9 @@ public class AdminController {
     }
 
     // UPDATE ANY ORDER STATUS (platform-wide)
+    // Transactional + ORDER_STATUS_CHANGED event so every client (customer,
+    // delivery partner, admin) updates the moment the change commits.
+    @org.springframework.transaction.annotation.Transactional
     @PutMapping("/orders/{id}/status")
     public AdminOrderDTO changeOrderStatus(
             @PathVariable Long id,
@@ -187,9 +193,17 @@ public class AdminController {
             throw new RuntimeException("Invalid status");
         }
 
-        order.setOrderStatus(normalized);
+        if (!normalized.equalsIgnoreCase(order.getOrderStatus())) {
+            order.setOrderStatus(normalized);
+            order = orderRepo.save(order);
+        }
 
-        return AdminOrderDTO.from(orderRepo.save(order));
+        AdminOrderDTO result = AdminOrderDTO.from(order);
+
+        // AFTER_COMMIT dispatch via OrderEventPublisher.
+        orderEventPublisher.publish("ORDER_STATUS_CHANGED", order);
+
+        return result;
     }
 
     // ANALYTICS DASHBOARD
